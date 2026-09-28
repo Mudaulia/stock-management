@@ -1,8 +1,10 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import DashboardLayout from './layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Package, ArrowUp, ArrowDown, ClipboardCheck, AlertTriangle } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 async function getDashboardStats() {
   const [totalItems, lowStockItems, recentStockIn, recentStockOut, pendingOpnames] = await Promise.all([
@@ -16,7 +18,11 @@ async function getDashboardStats() {
   return { totalItems, lowStockItems, recentStockIn, recentStockOut, pendingOpnames }
 }
 
-async function getRecentTransactions() {
+async function getRecentTransactions(): Promise<
+  Prisma.StockTransactionGetPayload<{
+    include: { item: { select: { name: true; code: true } } }
+  }>[]
+> {
   return prisma.stockTransaction.findMany({
     take: 5,
     orderBy: { transactionDate: 'desc' },

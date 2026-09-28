@@ -201,7 +201,7 @@ export default function OpnamePage() {
       const res = await fetch(`/api/opname/${selectedOpname.id}/reconcile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: `Direkonsiliasi oleh ${watch('fullName') || 'Admin'}` }),
+        body: JSON.stringify({}),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.message || 'Gagal merekonsiliasi')
@@ -467,7 +467,7 @@ export default function OpnamePage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="itemId">Barang *</Label>
-              <Select onValueChange={(v) => setValue('itemId', v)}>
+              <Select onValueChange={(v: string) => setValue('itemId', v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih barang" />
                 </SelectTrigger>
