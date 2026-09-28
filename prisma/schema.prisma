@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  WAREHOUSE_STAFF
+  VIEWER
+}
+
+enum TransactionType {
+  STOCK_IN
+  STOCK_OUT
+  ADJUSTMENT
+}
+
+enum OpnameStatus {
+  PENDING
+  RECONCILED
+  CANCELLED
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  username     String    @unique
+  passwordHash String    @map("password_hash")
+  fullName     String    @map("full_name")
+  role         Role      @default(VIEWER)
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  lastLoginAt  DateTime? @map("last_login_at")
+
+  // Relations
+  stockTransactions StockTransaction[]
+  opnames           StockOpname[]         @relation("OpnameUser")
+  reconciliations   StockReconciliation[] @relation("ReconciliationUser")
+
+  @@map("users")
+}
+
+model Item {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  unit         String
+  minStock     Int      @default(0) @map("min_stock")
+  currentStock Int      @default(0) @map("current_stock")
+  description  String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  stockTransactions StockTransaction[]
+  opnames           StockOpname[]
+
+  @@index([code])
+  @@index([name])
+  @@map("items")
+}
+
+model StockTransaction {
+  id              String          @id @default(cuid())
+  itemId          String          @map("item_id")
+  type            TransactionType
+  quantity        Int
+  reference       String?
+  notes           String?
+  transactionDate DateTime        @default(now()) @map("transaction_date")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  createdById     String          @map("created_by_id")
+
+  // Relations
+  item      Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([itemId])
+  @@index([type])
+  @@index([transactionDate])
+  @@map("stock_transactions")
+}
+
+model StockOpname {
+  id            String       @id @default(cuid())
+  itemId        String       @map("item_id")
+  systemStock   Int          @map("system_stock")
+  physicalStock Int          @map("physical_stock")
+  difference    Int
+  notes         String?
+  status        OpnameStatus @default(PENDING)
+  opnameDate    DateTime     @default(now()) @map("opname_date")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  createdById   String       @map("created_by_id")
+
+  // Relations
+  item           Item                 @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  createdBy      User                 @relation("OpnameUser", fields: [createdById], references: [id])
+  reconciliation StockReconciliation?
+
+  @@index([itemId])
+  @@index([status])
+  @@index([opnameDate])
+  @@map("stock_opnames")
+}
+
+model StockReconciliation {
+  id           String   @id @default(cuid())
+  opnameId     String   @unique @map("opname_id")
+  adjustedById String   @map("adjusted_by_id")
+  adjustedAt   DateTime @default(now()) @map("adjusted_at")
+  notes        String?
+
+  // Relations
+  opname     StockOpname @relation(fields: [opnameId], references: [id], onDelete: Cascade)
+  adjustedBy User        @relation("ReconciliationUser", fields: [adjustedById], references: [id])
+
+  @@map("stock_reconciliations")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  action    String
+  entity    String
+  entityId  String   @map("entity_id")
+  oldData   Json?
+  newData   Json?
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
