@@ -7,120 +7,246 @@ const reconcileSchema = z.object({
   notes: z.string().optional(),
 })
 
+class StaleOpnameError extends Error {
+  constructor() {
+    super(
+      'Stok sistem sudah berubah sejak opname dibuat. ' +
+      'Opname harus dibuat ulang sebelum rekonsiliasi.'
+    )
+    this.name = 'StaleOpnameError'
+  }
+}
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  {
+    params,
+  }: {
+    params: Promise<{ id: string }>
+  }
 ) {
   try {
     const session = await getServerSession()
+
     if (!session) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 401 }
+      )
     }
 
-    // Only ADMIN can reconcile
     if (session.user.role !== 'ADMIN') {
-      return NextResponse.json({ message: 'Hanya ADMIN yang dapat merekonsiliasi opname' }, { status: 403 })
+      return NextResponse.json(
+        {
+          message:
+            'Hanya ADMIN yang dapat merekonsiliasi opname',
+        },
+        { status: 403 }
+      )
     }
 
     const { id } = await params
+
     const body = await request.json()
-    const validation = reconcileSchema.safeParse(body)
+    const validation =
+      reconcileSchema.safeParse(body)
 
     if (!validation.success) {
       return NextResponse.json(
-        { message: 'Validation error', errors: validation.error.flatten().fieldErrors },
+        {
+          message: 'Validation error',
+          errors:
+            validation.error.flatten()
+              .fieldErrors,
+        },
         { status: 400 }
       )
     }
 
     const { notes } = validation.data
 
-    const opname = await prisma.stockOpname.findUnique({
-      where: { id },
-      include: { item: true },
-    })
+    const opname =
+      await prisma.stockOpname.findUnique({
+        where: {
+          id,
+        },
+        include: {
+          item: true,
+        },
+      })
 
     if (!opname) {
-      return NextResponse.json({ message: 'Opname tidak ditemukan' }, { status: 404 })
+      return NextResponse.json(
+        {
+          message: 'Opname tidak ditemukan',
+        },
+        { status: 404 }
+      )
     }
 
     if (opname.status !== 'PENDING') {
       return NextResponse.json(
-        { message: 'Hanya opname dengan status PENDING yang dapat direkonsiliasi' },
+        {
+          message:
+            'Hanya opname dengan status PENDING yang dapat direkonsiliasi',
+        },
         { status: 400 }
       )
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      // Update item stock to physical stock
-      const updatedItem = await tx.item.update({
-        where: { id: opname.itemId },
-        data: { currentStock: opname.physicalStock },
-      })
+    const result = await prisma.$transaction(
+      async (tx) => {
+        /*
+         * Critical snapshot consistency check.
+         *
+         * Reconciliation is only allowed if the item's current
+         * stock is still equal to the systemStock captured when
+         * the opname was created.
+         *
+         * Example:
+         *
+         * Opname snapshot = 100
+         * Later Stock In = +20
+         * Current stock = 120
+         *
+         * Reconciliation must NOT blindly change 120 -> physicalStock.
+         */
+        const stockUpdate =
+          await tx.item.updateMany({
+            where: {
+              id: opname.itemId,
+              currentStock: opname.systemStock,
+            },
+            data: {
+              currentStock: opname.physicalStock,
+            },
+          })
 
-      // Update opname status
-      const updatedOpname = await tx.stockOpname.update({
-        where: { id },
-        data: { status: 'RECONCILED' },
-      })
+        if (stockUpdate.count !== 1) {
+          throw new StaleOpnameError()
+        }
 
-      // Create reconciliation record
-      const reconciliation = await tx.stockReconciliation.create({
-        data: {
-          opnameId: id,
-          adjustedById: session.user.id,
-          notes,
-        },
-      })
+        const updatedOpname =
+          await tx.stockOpname.update({
+            where: {
+              id,
+            },
+            data: {
+              status: 'RECONCILED',
+            },
+          })
 
-      // Create adjustment transaction record
-      if (opname.difference !== 0) {
-        await tx.stockTransaction.create({
+        const reconciliation =
+          await tx.stockReconciliation.create({
+            data: {
+              opnameId: id,
+              adjustedById: session.user.id,
+              notes,
+            },
+          })
+
+        /*
+         * ADJUSTMENT quantity represents a signed delta:
+         *
+         * +10 = stock increase
+         * -10 = stock decrease
+         *
+         * STOCK_IN and STOCK_OUT remain positive quantities.
+         *
+         * No schema migration is required because Prisma Int
+         * already permits negative values.
+         */
+        if (opname.difference !== 0) {
+          await tx.stockTransaction.create({
+            data: {
+              itemId: opname.itemId,
+              type: 'ADJUSTMENT',
+              quantity: opname.difference,
+              reference:
+                `OPNAME-${opname.id.slice(0, 8)}`,
+              notes:
+                `Penyesuaian stok dari opname: ${
+                  notes || 'Tanpa catatan'
+                }`,
+              transactionDate: new Date(),
+              createdById: session.user.id,
+            },
+          })
+        }
+
+        await tx.auditLog.create({
           data: {
-            itemId: opname.itemId,
-            type: 'ADJUSTMENT',
-            quantity: opname.difference,
-            reference: `OPNAME-${opname.id.slice(0, 8)}`,
-            notes: `Penyesuaian stok dari opname: ${notes || 'Tanpa catatan'}`,
-            transactionDate: new Date(),
-            createdById: session.user.id,
+            userId: session.user.id,
+            action: 'ADJUST',
+            entity: 'Item',
+            entityId: opname.itemId,
+            oldData: {
+              currentStock: opname.systemStock,
+            },
+            newData: {
+              currentStock: opname.physicalStock,
+            },
           },
         })
+
+        await tx.auditLog.create({
+          data: {
+            userId: session.user.id,
+            action: 'RECONCILE',
+            entity: 'StockOpname',
+            entityId: id,
+            oldData: {
+              status: opname.status,
+            },
+            newData: {
+              status: 'RECONCILED',
+              notes,
+            },
+          },
+        })
+
+        return {
+          updatedOpname,
+          reconciliation,
+        }
       }
-
-      // Audit log for item stock change
-      await tx.auditLog.create({
-        data: {
-          userId: session.user.id,
-          action: 'ADJUST',
-          entity: 'Item',
-          entityId: opname.itemId,
-          oldData: { currentStock: opname.systemStock },
-          newData: { currentStock: opname.physicalStock },
-        },
-      })
-
-      // Audit log for opname reconciliation
-      await tx.auditLog.create({
-        data: {
-          userId: session.user.id,
-          action: 'RECONCILE',
-          entity: 'StockOpname',
-          entityId: id,
-          oldData: { status: opname.status },
-          newData: { status: 'RECONCILED', notes },
-        },
-      })
-
-      return { updatedItem, updatedOpname, reconciliation }
-    })
+    )
 
     return NextResponse.json({
-      message: 'Opname berhasil direkonsiliasi',
+      message:
+        'Opname berhasil direkonsiliasi',
       data: result,
     })
   } catch (error) {
-    console.error('POST /api/opname/[id]/reconcile error:', error)
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          message: 'Validation error',
+          errors:
+            error.flatten().fieldErrors,
+        },
+        { status: 400 }
+      )
+    }
+
+    if (error instanceof StaleOpnameError) {
+      return NextResponse.json(
+        {
+          message: error.message,
+          code: 'STALE_OPNAME',
+        },
+        { status: 409 }
+      )
+    }
+
+    console.error(
+      'POST /api/opname/[id]/reconcile error:',
+      error
+    )
+
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }

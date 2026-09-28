@@ -8,7 +8,15 @@ const itemCreateSchema = z.object({
   name: z.string().min(1, 'Nama barang wajib diisi').max(255),
   unit: z.string().min(1, 'Satuan wajib diisi').max(50),
   minStock: z.number().int().min(0).default(0),
+
+  /*
+   * currentStock is allowed only when creating a brand-new item.
+   *
+   * It is recorded as STOCK_IN below so every initial quantity
+   * has an inventory transaction.
+   */
   currentStock: z.number().int().min(0).default(0),
+
   description: z.string().optional(),
 })
 
@@ -17,26 +25,66 @@ const itemQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
   isActive: z.coerce.boolean().optional(),
-  sortBy: z.enum(['code', 'name', 'unit', 'currentStock', 'minStock', 'createdAt']).default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  sortBy: z
+    .enum([
+      'code',
+      'name',
+      'unit',
+      'currentStock',
+      'minStock',
+      'createdAt',
+    ])
+    .default('createdAt'),
+  sortOrder: z
+    .enum(['asc', 'desc'])
+    .default('desc'),
 })
 
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
+
     if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 401 }
+      )
     }
 
     const { searchParams } = new URL(request.url)
-    const query = itemQuerySchema.parse(Object.fromEntries(searchParams))
 
-    const where: any = {}
+    const query = itemQuerySchema.parse(
+      Object.fromEntries(searchParams)
+    )
+
+    const where: {
+      OR?: Array<{
+        code?: {
+          contains: string
+          mode: 'insensitive'
+        }
+        name?: {
+          contains: string
+          mode: 'insensitive'
+        }
+      }>
+      isActive?: boolean
+    } = {}
 
     if (query.search) {
       where.OR = [
-        { code: { contains: query.search, mode: 'insensitive' } },
-        { name: { contains: query.search, mode: 'insensitive' } },
+        {
+          code: {
+            contains: query.search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          name: {
+            contains: query.search,
+            mode: 'insensitive',
+          },
+        },
       ]
     }
 
@@ -49,7 +97,9 @@ export async function GET(request: NextRequest) {
         where,
         skip: (query.page - 1) * query.limit,
         take: query.limit,
-        orderBy: { [query.sortBy]: query.sortOrder },
+        orderBy: {
+          [query.sortBy]: query.sortOrder,
+        },
         select: {
           id: true,
           code: true,
@@ -63,7 +113,9 @@ export async function GET(request: NextRequest) {
           updatedAt: true,
         },
       }),
-      prisma.item.count({ where }),
+      prisma.item.count({
+        where,
+      }),
     ])
 
     return NextResponse.json({
@@ -72,62 +124,129 @@ export async function GET(request: NextRequest) {
         page: query.page,
         limit: query.limit,
         total,
-        totalPages: Math.ceil(total / query.limit),
+        totalPages: Math.ceil(
+          total / query.limit
+        ),
       },
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: 'Parameter tidak valid', errors: error.errors }, { status: 400 })
+      return NextResponse.json(
+        {
+          message: 'Parameter tidak valid',
+          errors: error.errors,
+        },
+        { status: 400 }
+      )
     }
+
     console.error('Get items error:', error)
-    return NextResponse.json({ message: 'Terjadi kesalahan server' }, { status: 500 })
+
+    return NextResponse.json(
+      { message: 'Terjadi kesalahan server' },
+      { status: 500 }
+    )
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser()
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'WAREHOUSE_STAFF')) {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+
+    if (
+      !user ||
+      (user.role !== 'ADMIN' &&
+        user.role !== 'WAREHOUSE_STAFF')
+    ) {
+      return NextResponse.json(
+        { message: 'Forbidden' },
+        { status: 403 }
+      )
     }
 
     const body = await request.json()
     const data = itemCreateSchema.parse(body)
 
-    // Check unique code
-    const existing = await prisma.item.findUnique({ where: { code: data.code } })
+    const existing = await prisma.item.findUnique({
+      where: {
+        code: data.code,
+      },
+    })
+
     if (existing) {
-      return NextResponse.json({ message: 'Kode barang sudah digunakan' }, { status: 400 })
+      return NextResponse.json(
+        {
+          message: 'Kode barang sudah digunakan',
+        },
+        { status: 400 }
+      )
     }
 
-    const item = await prisma.item.create({
-      data: {
-        code: data.code,
-        name: data.name,
-        unit: data.unit,
-        minStock: data.minStock,
-        currentStock: data.currentStock,
-        description: data.description,
-      },
-    })
+    const item = await prisma.$transaction(
+      async (tx) => {
+        const createdItem = await tx.item.create({
+          data: {
+            code: data.code,
+            name: data.name,
+            unit: data.unit,
+            minStock: data.minStock,
+            currentStock: data.currentStock,
+            description: data.description,
+          },
+        })
 
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'CREATE',
-        entity: 'ITEM',
-        entityId: item.id,
-        newData: item,
-      },
-    })
+        /*
+         * Initial stock is represented as a real inventory
+         * movement. This keeps currentStock aligned with
+         * the transaction history from the first day.
+         */
+        if (data.currentStock > 0) {
+          await tx.stockTransaction.create({
+            data: {
+              itemId: createdItem.id,
+              type: 'STOCK_IN',
+              quantity: data.currentStock,
+              reference: `INITIAL-${createdItem.id.slice(0, 8)}`,
+              notes: 'Stok awal saat pembuatan barang',
+              transactionDate: new Date(),
+              createdById: user.id,
+            },
+          })
+        }
 
-    return NextResponse.json(item, { status: 201 })
+        await tx.auditLog.create({
+          data: {
+            userId: user.id,
+            action: 'CREATE',
+            entity: 'ITEM',
+            entityId: createdItem.id,
+            newData: createdItem,
+          },
+        })
+
+        return createdItem
+      }
+    )
+
+    return NextResponse.json(item, {
+      status: 201,
+    })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: 'Validasi gagal', errors: error.errors }, { status: 400 })
+      return NextResponse.json(
+        {
+          message: 'Validasi gagal',
+          errors: error.errors,
+        },
+        { status: 400 }
+      )
     }
+
     console.error('Create item error:', error)
-    return NextResponse.json({ message: 'Terjadi kesalahan server' }, { status: 500 })
+
+    return NextResponse.json(
+      { message: 'Terjadi kesalahan server' },
+      { status: 500 }
+    )
   }
 }
