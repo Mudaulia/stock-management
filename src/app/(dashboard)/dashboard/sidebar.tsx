@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Menu, X, Package, ClipboardCheck, ArrowUp, ArrowDown, LogOut, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -78,7 +79,7 @@ export function Sidebar({ userRole }: SidebarProps) {
               </div>
               <nav className={bemBlock.e('mobile-menu-nav')}>
                 {filteredNavigation.map((item) => (
-                  <a
+                  <Link
                     key={item.name}
                     href={item.href}
                     className={bemBlock.e('mobile-menu-nav-item')}
@@ -86,7 +87,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                   >
                     <item.icon className={bemBlock.e('mobile-menu-nav-item-icon')} />
                     {item.name}
-                  </a>
+                  </Link>
                 ))}
               </nav>
             </div>
@@ -124,14 +125,14 @@ export function Sidebar({ userRole }: SidebarProps) {
             </div>
             <nav className={bemBlock.e('desktop-nav')}>
               {filteredNavigation.map((item) => (
-                <a
+                <Link
                   key={item.name}
                   href={item.href}
                   className={bemBlock.e('desktop-nav-item')}
                 >
                   <item.icon className={bemBlock.e('desktop-nav-item-icon')} />
                   {item.name}
-                </a>
+                </Link>
               ))}
             </nav>
           </div>
@@ -145,8 +146,9 @@ export function Sidebar({ userRole }: SidebarProps) {
                 <p className={bemBlock.e('desktop-user-role')}>{userRole}</p>
               </div>
             </div>
-            <Button variant="outline" className={bemBlock.e('desktop-logout-button')} onClick={() => {
-              window.location.href = '/api/auth/logout'
+            <Button variant="outline" className={bemBlock.e('desktop-logout-button')} onClick={async () => {
+              await fetch('/api/auth/logout', { method: 'POST' })
+              window.location.href = '/login'
             }}>
               <LogOut className={bemBlock.e('desktop-logout-button-icon')} />
               Keluar

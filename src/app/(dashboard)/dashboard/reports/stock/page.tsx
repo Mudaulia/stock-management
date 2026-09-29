@@ -320,8 +320,8 @@ export default function StockReportPage() {
                         Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total} data
                       </div>
                       <div className={bemBlock.e('pagination-controls')}>
-                        <Select value={pagination.limit.toString()} onValueChange={(v) => handleLimitChange(parseInt(v))} className={bemBlock.e('pagination-select')}>
-                          <SelectTrigger className="w-[100px]">
+                        <Select value={pagination.limit.toString()} onValueChange={(v) => handleLimitChange(parseInt(v))}>
+                          <SelectTrigger className={cn("w-[100px]", bemBlock.e('pagination-select'))}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
