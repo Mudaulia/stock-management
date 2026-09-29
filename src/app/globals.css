@@ -634,10 +634,6 @@
   @apply text-blue-600;
 }
 
-.opname__table-footer {
-  @apply;
-}
-
 .opname__table-footer--flex {
   @apply flex items-center justify-between;
 }
