@@ -15,8 +15,8 @@ import { Loader2, Lock, Mail, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const loginSchema = z.object({
-  email: z.string().email('Format email tidak valid'),
-  password: z.string().min(6, 'Password minimal 6 karakter'),
+  email: z.string().min(1, 'Email wajib diisi'),
+  password: z.string().min(1, 'Password wajib diisi'),
 })
 
 type LoginForm = z.infer<typeof loginSchema>

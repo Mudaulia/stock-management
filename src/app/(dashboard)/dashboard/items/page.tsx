@@ -54,6 +54,7 @@ import {
 ;
 import { cn } from "@/lib/utils";
 import { useToast, Toaster } from "@/components/ui/toaster";
+import { bem, bemVariant } from "@/lib/bem";
 
 const itemSchema = z.object({
   code: z.string().min(1, "Kode barang wajib diisi").max(50),
@@ -299,28 +300,28 @@ export default function ItemsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : items.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Belum ada data barang</p>
-              <Button onClick={openCreateDialog} className="mt-4">
-                <Plus className="mr-2 h-4 w-4" />
+            <div className="items__empty-state">
+              <Package className="items__empty-icon" />
+              <p className="items__empty-text">Belum ada data barang</p>
+              <Button onClick={openCreateDialog} className="items__empty-button">
+                <Plus className="items__empty-button-icon" />
                 Tambah Barang Pertama
               </Button>
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className="items__table-container">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">#</TableHead>
-                      <TableHead>Kode</TableHead>
-                      <TableHead>Nama Barang</TableHead>
-                      <TableHead>Satuan</TableHead>
-                      <TableHead className="text-right">Stok</TableHead>
-                      <TableHead className="text-right">Min</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-40">Aksi</TableHead>
+                      <TableHead className="items__table-cell items__table-cell--index">#{' '}</TableHead>
+                      <TableHead className="items__table-cell items__table-cell--code">Kode</TableHead>
+                      <TableHead className="items__table-cell items__table-cell--name">Nama Barang</TableHead>
+                      <TableHead className="items__table-cell items__table-cell--unit">Satuan</TableHead>
+                      <TableHead className="items__table-cell items__table-cell--stock items__table-cell--number">Stok</TableHead>
+                      <TableHead className="items__table-cell items__table-cell--min items__table-cell--number">Min</TableHead>
+                      <TableHead className="items__table-cell items__table-cell--status">Status</TableHead>
+                      <TableHead className="items__table-cell items__table-cell--actions">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -329,62 +330,62 @@ export default function ItemsPage() {
                       const globalIndex =
                         (pagination.page - 1) * pagination.limit + index + 1;
                       return (
-                        <TableRow key={item.id}>
-                          <TableCell className="text-gray-500">
+                        <TableRow key={item.id} className="items__table-row">
+                          <TableCell className="items__table-cell items__table-cell--index">
                             {globalIndex}
                           </TableCell>
-                          <TableCell className="font-mono font-medium">
+                          <TableCell className="items__table-cell items__table-cell--code items__table-cell--code-mono">
                             {item.code}
                           </TableCell>
-                          <TableCell>
-                            <div className="font-medium">{item.name}</div>
+                          <TableCell className="items__table-cell items__table-cell--name">
+                            <div className="items__item-name">{item.name}</div>
                             {item.description && (
-                              <div className="text-xs text-gray-500 line-clamp-1">
+                              <div className="items__item-description">
                                 {item.description}
                               </div>
                             )}
                           </TableCell>
-                          <TableCell>{item.unit}</TableCell>
-                          <TableCell className="text-right font-mono font-medium">
+                          <TableCell className="items__table-cell items__table-cell--unit">{item.unit}</TableCell>
+                          <TableCell className="items__table-cell items__table-cell--stock items__table-cell--number items__table-cell--stock-mono">
                             {item.currentStock.toLocaleString()}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-gray-500">
+                          <TableCell className="items__table-cell items__table-cell--min items__table-cell--number items__table-cell--min-mono">
                             {item.minStock.toLocaleString()}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="items__table-cell items__table-cell--status">
                             <span
                               className={cn(
-                                "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                                "items__badge",
                                 status.className,
                               )}
                             >
                               {status.label}
                             </span>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="items__table-cell items__table-cell--actions">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8"
+                                  className="items__action-button"
                                 >
-                                  <MoreHorizontal className="h-4 w-4" />
+                                  <MoreHorizontal className="items__action-button-icon" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem
                                   onClick={() => openEditDialog(item)}
                                 >
-                                  <Edit className="mr-2 h-4 w-4" />
+                                  <Edit className="items__dropdown-icon" />
                                   Edit
                                 </DropdownMenuItem>
                                 {item.isActive && (
                                   <DropdownMenuItem
                                     onClick={() => setDeleteConfirm(item.id)}
-                                    className="text-red-600 focus:text-red-600"
+                                    className="items__dropdown-item--danger items__dropdown-item--danger-text"
                                   >
-                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    <Trash2 className="items__dropdown-icon" />
                                     Hapus
                                   </DropdownMenuItem>
                                 )}

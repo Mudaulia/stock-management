@@ -57,3 +57,831 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Dashboard BEM Classes */
+.dashboard__header {
+  margin-bottom: 1.5rem;
+}
+
+.dashboard__title {
+  @apply text-3xl font-bold text-gray-900;
+}
+
+.dashboard__subtitle {
+  @apply text-gray-500 mt-1;
+}
+
+.dashboard__stats-grid {
+  @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-5;
+}
+
+.dashboard__stat-card {
+  @apply transition-all hover:shadow-md;
+}
+
+.dashboard__stat-card-header {
+  @apply flex flex-row items-center justify-between space-y-0 pb-2;
+}
+
+.dashboard__stat-card-title {
+  @apply text-sm font-medium text-gray-500;
+}
+
+.dashboard__stat-icon {
+  @apply h-4 w-4;
+}
+
+.dashboard__stat-value {
+  @apply text-2xl font-bold;
+}
+
+.dashboard__empty-state {
+  @apply text-center text-gray-500 py-8;
+}
+
+.dashboard__table-container {
+  @apply overflow-x-auto;
+}
+
+.dashboard__table {
+  @apply w-full;
+}
+
+.dashboard__table-row {
+  @apply border-b transition-colors;
+}
+
+.dashboard__table-row--header {
+  @apply text-left text-sm text-gray-500;
+}
+
+.dashboard__table-row--hover {
+  @apply hover:bg-gray-50;
+}
+
+.dashboard__table-cell {
+  @apply py-3 text-sm;
+}
+
+.dashboard__table-cell--header {
+  @apply pb-3 font-medium;
+}
+
+.dashboard__table-cell--number {
+  @apply text-sm font-medium;
+}
+
+.dashboard__table-cell--date {
+  @apply text-sm text-gray-500;
+}
+
+.dashboard__item-name {
+  @apply font-medium;
+}
+
+.dashboard__item-code {
+  @apply text-xs text-gray-500;
+}
+
+.dashboard__badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.dashboard__badge--success {
+  @apply bg-green-100 text-green-800;
+}
+
+.dashboard__badge--danger {
+  @apply bg-red-100 text-red-800;
+}
+
+.dashboard__badge--warning {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+/* Items Page BEM Classes */
+.items__empty-state {
+  @apply text-center py-12;
+}
+
+.items__empty-icon {
+  @apply h-12 w-12 text-gray-300 mx-auto mb-4;
+}
+
+.items__empty-text {
+  @apply text-gray-500;
+}
+
+.items__empty-button {
+  @apply mt-4;
+}
+
+.items__empty-button-icon {
+  @apply mr-2 h-4 w-4;
+}
+
+.items__table-container {
+  @apply overflow-x-auto;
+}
+
+.items__table {
+  @apply w-full;
+}
+
+.items__table-row {
+  @apply border-b transition-colors;
+}
+
+.items__table-cell {
+  @apply py-3 text-sm;
+}
+
+.items__table-cell--index {
+  @apply text-gray-500;
+}
+
+.items__table-cell--code {
+  @apply font-mono font-medium;
+}
+
+.items__table-cell--code-mono {
+  @apply font-mono font-medium;
+}
+
+.items__table-cell--name {
+}
+
+.items__item-name {
+  @apply font-medium;
+}
+
+.items__item-description {
+  @apply text-xs text-gray-500 line-clamp-1;
+}
+
+.items__table-cell--unit {
+}
+
+.items__table-cell--stock {
+  @apply text-right font-mono font-medium;
+}
+
+.items__table-cell--stock-mono {
+  @apply font-mono font-medium;
+}
+
+.items__table-cell--min {
+  @apply text-right font-mono text-gray-500;
+}
+
+.items__table-cell--min-mono {
+  @apply font-mono text-gray-500;
+}
+
+.items__table-cell--status {
+}
+
+.items__badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.items__action-button {
+  @apply h-8 w-8;
+}
+
+.items__action-button-icon {
+  @apply h-4 w-4;
+}
+
+.items__dropdown-icon {
+  @apply mr-2 h-4 w-4;
+}
+
+.items__dropdown-item--danger {
+}
+
+.items__dropdown-item--danger-text {
+  @apply text-red-600 focus:text-red-600;
+}
+
+/* Stock In Page BEM Classes */
+.stock-in__empty-state {
+  @apply text-center py-12;
+}
+
+.stock-in__empty-icon {
+  @apply h-12 w-12 text-gray-300 mx-auto mb-4;
+}
+
+.stock-in__empty-text {
+  @apply text-gray-500;
+}
+
+.stock-in__empty-button {
+  @apply mt-4;
+}
+
+.stock-in__empty-button-icon {
+  @apply mr-2 h-4 w-4;
+}
+
+.stock-in__table-container {
+  @apply overflow-x-auto;
+}
+
+.stock-in__table {
+  @apply w-full;
+}
+
+.stock-in__table-row {
+  @apply border-b transition-colors;
+}
+
+.stock-in__table-cell {
+  @apply py-3 text-sm;
+}
+
+.stock-in__table-cell--index {
+  @apply text-gray-500;
+}
+
+.stock-in__table-cell--date {
+}
+
+.stock-in__table-cell--item {
+}
+
+.stock-in__item-name {
+  @apply font-medium;
+}
+
+.stock-in__item-code {
+  @apply text-xs text-gray-500 font-mono;
+}
+
+.stock-in__table-cell--unit {
+}
+
+.stock-in__table-cell--quantity {
+  @apply text-right font-mono font-medium text-green-600;
+}
+
+.stock-in__table-cell--quantity-mono {
+  @apply font-mono font-medium text-green-600;
+}
+
+.stock-in__table-cell--reference {
+}
+
+.stock-in__table-cell--notes {
+}
+
+.stock-in__table-cell--notes-truncate {
+  @apply max-w-[200px] truncate;
+}
+
+.stock-in__table-cell--created {
+}
+
+.stock-in__table-footer {
+}
+
+.stock-in__table-footer--pagination {
+  @apply flex items-center justify-between;
+}
+
+.stock-in__pagination-info {
+  @apply text-sm text-gray-500;
+}
+
+.stock-in__pagination-controls {
+  @apply flex items-center space-x-2;
+}
+
+/* Stock Out Page BEM Classes */
+.stock-out__empty-state {
+  @apply text-center py-12;
+}
+
+.stock-out__empty-icon {
+  @apply h-12 w-12 text-gray-300 mx-auto mb-4;
+}
+
+.stock-out__empty-text {
+  @apply text-gray-500;
+}
+
+.stock-out__empty-button {
+  @apply mt-4;
+}
+
+.stock-out__empty-button-icon {
+  @apply mr-2 h-4 w-4;
+}
+
+.stock-out__table-container {
+  @apply overflow-x-auto;
+}
+
+.stock-out__table {
+  @apply w-full;
+}
+
+.stock-out__table-row {
+  @apply border-b transition-colors;
+}
+
+.stock-out__table-cell {
+  @apply py-3 text-sm;
+}
+
+.stock-out__table-cell--index {
+  @apply text-gray-500;
+}
+
+.stock-out__table-cell--date {
+}
+
+.stock-out__table-cell--item {
+}
+
+.stock-out__item-name {
+  @apply font-medium;
+}
+
+.stock-out__item-code {
+  @apply text-xs text-gray-500 font-mono;
+}
+
+.stock-out__table-cell--unit {
+}
+
+.stock-out__table-cell--quantity {
+  @apply text-right font-mono font-medium text-red-600;
+}
+
+.stock-out__table-cell--quantity-mono {
+  @apply font-mono font-medium text-red-600;
+}
+
+.stock-out__table-cell--reference {
+}
+
+.stock-out__table-cell--notes {
+}
+
+.stock-out__table-cell--notes-truncate {
+  @apply max-w-[200px] truncate;
+}
+
+.stock-out__table-cell--created {
+}
+
+.stock-out__table-footer {
+}
+
+.stock-out__table-footer--pagination {
+  @apply flex items-center justify-between;
+}
+
+.stock-out__pagination-info {
+  @apply text-sm text-gray-500;
+}
+
+.stock-out__pagination-controls {
+  @apply flex items-center space-x-2;
+}
+
+/* Opname Page BEM Classes */
+.opname__header {
+  @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4;
+}
+
+.opname__title {
+  @apply text-3xl font-bold text-gray-900;
+}
+
+.opname__subtitle {
+  @apply text-gray-500 mt-1;
+}
+
+.opname__filter-card {
+  @apply pt-6;
+}
+
+.opname__filter-form {
+  @apply flex flex-col sm:flex-row gap-4;
+}
+
+.opname__search-input-wrapper {
+  @apply relative flex-1 max-w-md;
+}
+
+.opname__search-icon {
+  @apply absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4;
+}
+
+.opname__search-input {
+  @apply pl-10;
+}
+
+.opname__filter-group {
+  @apply flex items-center space-x-2;
+}
+
+.opname__filter-label {
+  @apply text-sm text-gray-500;
+}
+
+.opname__filter-select {
+  @apply w-[160px];
+}
+
+.opname__filter-date {
+  @apply w-[160px];
+}
+
+.opname__table-card {
+  @apply pt-0;
+}
+
+.opname__loading-state {
+  @apply flex items-center justify-center h-64;
+}
+
+.opname__loading-icon {
+  @apply h-8 w-8 animate-spin text-primary;
+}
+
+.opname__empty-state {
+  @apply text-center py-12;
+}
+
+.opname__empty-icon {
+  @apply h-12 w-12 text-gray-300 mx-auto mb-4;
+}
+
+.opname__empty-text {
+  @apply text-gray-500;
+}
+
+.opname__empty-button {
+  @apply mt-4;
+}
+
+.opname__table-container {
+  @apply overflow-x-auto;
+}
+
+.opname__table-header-cell {
+}
+
+.opname__table-header-cell--index {
+  @apply w-12;
+}
+
+.opname__table-header-cell--date {
+}
+
+.opname__table-header-cell--item {
+}
+
+.opname__table-header-cell--system-stock {
+  @apply text-right;
+}
+
+.opname__table-header-cell--physical-stock {
+  @apply text-right;
+}
+
+.opname__table-header-cell--difference {
+  @apply text-right;
+}
+
+.opname__table-header-cell--status {
+}
+
+.opname__table-header-cell--notes {
+}
+
+.opname__table-header-cell--created-by {
+}
+
+.opname__table-header-cell--actions {
+  @apply w-32;
+}
+
+.opname__table-cell {
+}
+
+.opname__table-cell--index {
+  @apply text-gray-500;
+}
+
+.opname__table-cell--date {
+}
+
+.opname__table-cell--item {
+}
+
+.opname__item-name {
+  @apply font-medium;
+}
+
+.opname__item-code {
+  @apply text-xs text-gray-500 font-mono;
+}
+
+.opname__table-cell--system-stock {
+  @apply text-right font-mono;
+}
+
+.opname__table-cell--physical-stock {
+  @apply text-right font-mono;
+}
+
+.opname__table-cell--difference {
+  @apply text-right;
+}
+
+.opname__table-cell--status {
+}
+
+.opname__table-cell--notes {
+  @apply max-w-[200px] truncate;
+}
+
+.opname__table-cell--created-by {
+}
+
+.opname__actions {
+  @apply flex items-center space-x-1;
+}
+
+.opname__action-icon {
+  @apply h-4 w-4;
+}
+
+.opname__action-icon--reconcile {
+  @apply text-green-600;
+}
+
+.opname__action-icon--cancel {
+  @apply text-red-600;
+}
+
+.opname__action-icon--view {
+  @apply text-blue-600;
+}
+
+.opname__table-footer {
+  @apply;
+}
+
+.opname__table-footer--flex {
+  @apply flex items-center justify-between;
+}
+
+.opname__pagination-info {
+  @apply text-sm text-gray-500;
+}
+
+.opname__pagination-controls {
+  @apply flex items-center space-x-2;
+}
+
+.opname__dialog {
+  @apply sm:max-w-[500px];
+}
+
+.opname__dialog-title {
+}
+
+.opname__dialog-description {
+}
+
+.opname__dialog-form {
+  @apply space-y-4;
+}
+
+.opname__form-group {
+  @apply space-y-2;
+}
+
+.opname__form-label {
+}
+
+.opname__form-select {
+}
+
+.opname__error-message {
+  @apply text-sm text-destructive;
+}
+
+.opname__form-grid {
+  @apply grid gap-4 sm:grid-cols-2;
+}
+
+.opname__reconcile-info {
+  @apply mt-2 space-y-1 text-sm;
+}
+
+.opname__difference-value {
+  @apply font-medium;
+}
+
+.opname__warning-text {
+  @apply mt-2 text-destructive text-sm;
+}
+
+/* Sidebar BEM Classes */
+.sidebar__mobile-header {
+  @apply lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b;
+}
+
+.sidebar__mobile-header-content {
+  @apply flex items-center justify-between px-4 py-3;
+}
+
+.sidebar__mobile-header-title {
+  @apply text-xl font-bold text-gray-900;
+}
+
+.sidebar__mobile-overlay {
+  @apply lg:hidden fixed inset-0 bg-black/50 z-40;
+}
+
+.sidebar__mobile-menu {
+  @apply lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform;
+}
+
+.sidebar__mobile-menu-content {
+  @apply flex flex-col h-full;
+}
+
+.sidebar__mobile-menu-header {
+  @apply flex items-center justify-between px-4 py-3 border-b;
+}
+
+.sidebar__mobile-menu-title {
+  @apply text-xl font-bold text-gray-900;
+}
+
+.sidebar__mobile-menu-body {
+  @apply flex-1 overflow-y-auto py-4;
+}
+
+.sidebar__mobile-menu-search {
+  @apply px-4 mb-4;
+}
+
+.sidebar__mobile-menu-search-input {
+  @apply w-full;
+}
+
+.sidebar__mobile-menu-nav {
+  @apply px-2 space-y-1;
+}
+
+.sidebar__mobile-menu-nav-item {
+  @apply flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100;
+}
+
+.sidebar__mobile-menu-nav-item-icon {
+  @apply mr-3 h-5 w-5;
+}
+
+.sidebar__desktop {
+  @apply fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform lg:translate-x-0;
+}
+
+.sidebar__desktop--collapsed {
+  @apply -translate-x-full;
+}
+
+.sidebar__desktop-content {
+  @apply flex flex-col h-full;
+}
+
+.sidebar__desktop-header {
+  @apply flex items-center justify-between px-4 py-3 border-b;
+}
+
+.sidebar__desktop-title {
+  @apply text-xl font-bold text-gray-900;
+}
+
+.sidebar__desktop-menu-toggle {
+  @apply lg:hidden;
+}
+
+.sidebar__desktop-body {
+  @apply flex-1 overflow-y-auto py-4;
+}
+
+.sidebar__desktop-search {
+  @apply px-4 mb-4;
+}
+
+.sidebar__desktop-search-input {
+  @apply w-full;
+}
+
+.sidebar__desktop-nav {
+  @apply px-2 space-y-1;
+}
+
+.sidebar__desktop-nav-item {
+  @apply flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100;
+}
+
+.sidebar__desktop-nav-item-icon {
+  @apply mr-3 h-5 w-5;
+}
+
+.sidebar__desktop-footer {
+  @apply border-t p-4;
+}
+
+.sidebar__desktop-user-info {
+  @apply flex items-center mb-4;
+}
+
+.sidebar__desktop-user-avatar {
+  @apply flex-shrink-0;
+}
+
+.sidebar__desktop-user-avatar-icon {
+  @apply h-6 w-6 text-blue-600;
+}
+
+.sidebar__desktop-user-details {
+  @apply ml-3;
+}
+
+.sidebar__desktop-user-name {
+  @apply text-sm font-medium text-gray-900;
+}
+
+.sidebar__desktop-user-role {
+  @apply text-xs text-gray-500;
+}
+
+.sidebar__desktop-logout-button {
+  @apply w-full;
+}
+
+.sidebar__desktop-logout-button-icon {
+  @apply mr-2 h-4 w-4;
+}
+
+.topbar__header {
+  @apply bg-white border-b;
+}
+
+.topbar__header-left {
+  @apply flex items-center;
+}
+
+.topbar__header-menu-toggle {
+  @apply mr-4 lg:hidden;
+}
+
+.topbar__header-title {
+  @apply text-xl font-bold text-gray-900;
+}
+
+.topbar__header-right {
+  @apply flex items-center space-x-4;
+}
+
+.topbar__header-user-info {
+  @apply flex items-center;
+}
+
+.topbar__header-user-avatar {
+  @apply h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center;
+}
+
+.topbar__header-user-avatar-icon {
+  @apply h-6 w-6 text-blue-600;
+}
+
+.topbar__header-user-details {
+  @apply ml-3;
+}
+
+.topbar__header-user-name {
+  @apply text-sm font-medium text-gray-900;
+}
+
+.topbar__header-user-role {
+  @apply text-xs text-gray-500;
+}
+
+.topbar__header-logout-button {
+}
+
+.topbar__header-logout-button-icon {
+  @apply mr-2 h-4 w-4;
+}

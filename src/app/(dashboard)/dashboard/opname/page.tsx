@@ -46,6 +46,7 @@ import { Plus, Search, Loader2, Calendar, Package, AlertTriangle, CheckCircle, X
 import { cn } from '@/lib/utils'
 import { useToast, Toaster } from '@/components/ui/toaster'
 import { format } from 'date-fns'
+import { bem, bemVariant } from '@/lib/bem'
 
 const opnameSchema = z.object({
   itemId: z.string().min(1, 'Barang wajib dipilih'),
@@ -267,15 +268,17 @@ export default function OpnamePage() {
     return <span className="text-gray-500 font-mono">0</span>
   }
 
+  const bemBlock = bem('opname')
+
   return (
-    <div className="space-y-6">
+    <div className={bemBlock()}>
       <Toaster />
 
       {/* Header & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className={bemBlock('header')}>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Stok Opname</h1>
-          <p className="text-gray-500 mt-1">Pencatatan stok fisik vs sistem</p>
+          <h1 className={bemBlock('title')}>Stok Opname</h1>
+          <p className={bemBlock('subtitle')}>Pencatatan stok fisik vs sistem</p>
         </div>
         <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
@@ -285,21 +288,21 @@ export default function OpnamePage() {
 
       {/* Search & Filter */}
       <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <CardContent className={bemBlock('filter-card')}>
+          <form onSubmit={handleSearch} className={bemBlock('filter-form')}>
+            <div className={bemBlock('search-input-wrapper')}>
+              <Search className={bemBlock('search-icon')} />
               <Input
                 placeholder="Cari barang, catatan..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
+                className={bemBlock('search-input')}
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <Label className="text-sm text-gray-500">Status:</Label>
+            <div className={bemBlock('filter-group')}>
+              <Label className={bemBlock('filter-label')}>Status:</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className={bemBlock('filter-select')}>
                   <SelectValue placeholder="Semua" />
                 </SelectTrigger>
                 <SelectContent>
@@ -310,13 +313,13 @@ export default function OpnamePage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center space-x-2">
-              <Label className="text-sm text-gray-500">Dari:</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-[160px]" />
+            <div className={bemBlock('filter-group')}>
+              <Label className={bemBlock('filter-label')}>Dari:</Label>
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={bemBlock('filter-date')} />
             </div>
-            <div className="flex items-center space-x-2">
-              <Label className="text-sm text-gray-500">Sampai:</Label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-[160px]" />
+            <div className={bemBlock('filter-group')}>
+              <Label className={bemBlock('filter-label')}>Sampai:</Label>
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={bemBlock('filter-date')} />
             </div>
             <Button type="submit" variant="outline">
               <Search className="mr-2 h-4 w-4" />
@@ -328,36 +331,36 @@ export default function OpnamePage() {
 
       {/* Table */}
       <Card>
-        <CardContent className="pt-0">
+        <CardContent className={bemBlock('table-card')}>
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className={bemBlock('loading-state')}>
+              <Loader2 className={bemBlock('loading-icon')} />
             </div>
           ) : opnames.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Belum ada data opname</p>
-              <Button onClick={() => setIsDialogOpen(true)} className="mt-4">
+            <div className={bemBlock('empty-state')}>
+              <Package className={bemBlock('empty-icon')} />
+              <p className={bemBlock('empty-text')}>Belum ada data opname</p>
+              <Button onClick={() => setIsDialogOpen(true)} className={bemBlock('empty-button')}>
                 <Plus className="mr-2 h-4 w-4" />
                 Buat Opname Pertama
               </Button>
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className={bemBlock('table-container')}>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">#</TableHead>
-                      <TableHead>Tanggal</TableHead>
-                      <TableHead>Barang</TableHead>
-                      <TableHead className="text-right">Stok Sistem</TableHead>
-                      <TableHead className="text-right">Stok Fisik</TableHead>
-                      <TableHead className="text-right">Selisih</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Catatan</TableHead>
-                      <TableHead>Dibuat Oleh</TableHead>
-                      <TableHead className="w-32">Aksi</TableHead>
+                      <TableHead className={bemBlock('table-header-cell', 'index')}>#</TableHead>
+                      <TableHead className={bemBlock('table-header-cell', 'date')}>Tanggal</TableHead>
+                      <TableHead className={bemBlock('table-header-cell', 'item')}>Barang</TableHead>
+                      <TableHead className={bemBlock('table-header-cell', 'system-stock', 'right')}>Stok Sistem</TableHead>
+                      <TableHead className={bemBlock('table-header-cell', 'physical-stock', 'right')}>Stok Fisik</TableHead>
+                      <TableHead className={bemBlock('table-header-cell', 'difference', 'right')}>Selisih</TableHead>
+                      <TableHead className={bemBlock('table-header-cell', 'status')}>Status</TableHead>
+                      <TableHead className={bemBlock('table-header-cell', 'notes')}>Catatan</TableHead>
+                      <TableHead className={bemBlock('table-header-cell', 'created-by')}>Dibuat Oleh</TableHead>
+                      <TableHead className={bemBlock('table-header-cell', 'actions', 'w-32')}>Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -365,22 +368,22 @@ export default function OpnamePage() {
                       const globalIndex = (pagination.page - 1) * pagination.limit + index + 1
                       return (
                         <TableRow key={op.id}>
-                          <TableCell className="text-gray-500">{globalIndex}</TableCell>
-                          <TableCell>
+                          <TableCell className={bemBlock('table-cell', 'index')}>{globalIndex}</TableCell>
+                          <TableCell className={bemBlock('table-cell', 'date')}>
                             {format(new Date(op.opnameDate), 'dd MMM yyyy')}
                           </TableCell>
-                          <TableCell>
-                            <div className="font-medium">{op.item.name}</div>
-                            <div className="text-xs text-gray-500 font-mono">{op.item.code}</div>
+                          <TableCell className={bemBlock('table-cell', 'item')}>
+                            <div className={bemBlock('item-name')}>{op.item.name}</div>
+                            <div className={bemBlock('item-code')}>{op.item.code}</div>
                           </TableCell>
-                          <TableCell className="text-right font-mono">{op.systemStock.toLocaleString()} {op.item.unit}</TableCell>
-                          <TableCell className="text-right font-mono">{op.physicalStock.toLocaleString()} {op.item.unit}</TableCell>
-                          <TableCell className="text-right">{getDifferenceBadge(op.difference)}</TableCell>
-                          <TableCell>{getStatusBadge(op.status)}</TableCell>
-                          <TableCell className="max-w-[200px] truncate">{op.notes || '-'}</TableCell>
-                          <TableCell>{op.createdBy.fullName}</TableCell>
+                          <TableCell className={bemBlock('table-cell', 'system-stock', 'right', 'font-mono')}>{op.systemStock.toLocaleString()} {op.item.unit}</TableCell>
+                          <TableCell className={bemBlock('table-cell', 'physical-stock', 'right', 'font-mono')}>{op.physicalStock.toLocaleString()} {op.item.unit}</TableCell>
+                          <TableCell className={bemBlock('table-cell', 'difference', 'right')}>{getDifferenceBadge(op.difference)}</TableCell>
+                          <TableCell className={bemBlock('table-cell', 'status')}>{getStatusBadge(op.status)}</TableCell>
+                          <TableCell className={bemBlock('table-cell', 'notes', 'max-w-[200px]', 'truncate')}>{op.notes || '-'}</TableCell>
+                          <TableCell className={bemBlock('table-cell', 'created-by')}>{op.createdBy.fullName}</TableCell>
                           <TableCell>
-                            <div className="flex items-center space-x-1">
+                            <div className={bemBlock('actions')}>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -391,7 +394,7 @@ export default function OpnamePage() {
                                 disabled={op.status !== 'PENDING'}
                                 title="Rekonsiliasi"
                               >
-                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <CheckCircle className={bemBlock('action-icon', 'reconcile')} />
                               </Button>
                               <Button
                                 variant="ghost"
@@ -403,7 +406,7 @@ export default function OpnamePage() {
                                 disabled={op.status !== 'PENDING'}
                                 title="Batalkan"
                               >
-                                <XCircle className="h-4 w-4 text-red-600" />
+                                <XCircle className={bemBlock('action-icon', 'cancel')} />
                               </Button>
                               <Button
                                 variant="ghost"
@@ -415,7 +418,7 @@ export default function OpnamePage() {
                                 disabled={op.status !== 'RECONCILED'}
                                 title="Lihat Detail"
                               >
-                                <Eye className="h-4 w-4 text-blue-600" />
+                                <Eye className={bemBlock('action-icon', 'view')} />
                               </Button>
                             </div>
                           </TableCell>
@@ -425,11 +428,11 @@ export default function OpnamePage() {
                   </TableBody>
                   <TableFooter>
                     <TableRow>
-                      <TableCell colSpan={10} className="flex items-center justify-between">
-                        <div className="text-sm text-gray-500">
+                      <TableCell colSpan={10} className={bemBlock('table-footer', 'flex', 'items-center', 'justify-between')}>
+                        <div className={bemBlock('pagination-info')}>
                           Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total}
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className={bemBlock('pagination-controls')}>
                           <Button
                             variant="outline"
                             size="sm"
@@ -459,16 +462,16 @@ export default function OpnamePage() {
 
       {/* Create Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className={bemBlock('dialog', 'sm:max-w-[500px]')}>
           <DialogHeader>
-            <DialogTitle>Buat Opname Baru</DialogTitle>
-            <DialogDescription>Catat stok fisik barang untuk dibandingkan dengan stok sistem</DialogDescription>
+            <DialogTitle className={bemBlock('dialog-title')}>Buat Opname Baru</DialogTitle>
+            <DialogDescription className={bemBlock('dialog-description')}>Catat stok fisik barang untuk dibandingkan dengan stok sistem</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="itemId">Barang *</Label>
+          <form onSubmit={handleSubmit(onSubmit)} className={bemBlock('dialog-form')}>
+            <div className={bemBlock('form-group')}>
+              <Label htmlFor="itemId" className={bemBlock('form-label')}>Barang *</Label>
               <Select onValueChange={(v: string) => setValue('itemId', v)}>
-                <SelectTrigger>
+                <SelectTrigger className={bemBlock('form-select')}>
                   <SelectValue placeholder="Pilih barang" />
                 </SelectTrigger>
                 <SelectContent>
@@ -479,31 +482,31 @@ export default function OpnamePage() {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.itemId && <p className="text-sm text-destructive">{errors.itemId.message}</p>}
+              {errors.itemId && <p className={bemBlock('error-message')}>{errors.itemId.message}</p>}
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="physicalStock">Stok Fisik *</Label>
+            <div className={bemBlock('form-grid')}>
+              <div className={bemBlock('form-group')}>
+                <Label htmlFor="physicalStock" className={bemBlock('form-label')}>Stok Fisik *</Label>
                 <Input
                   id="physicalStock"
                   type="number"
                   min="0"
                   {...register('physicalStock')}
                 />
-                {errors.physicalStock && <p className="text-sm text-destructive">{errors.physicalStock.message}</p>}
+                {errors.physicalStock && <p className={bemBlock('error-message')}>{errors.physicalStock.message}</p>}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="opnameDate">Tanggal Opname *</Label>
+              <div className={bemBlock('form-group')}>
+                <Label htmlFor="opnameDate" className={bemBlock('form-label')}>Tanggal Opname *</Label>
                 <Input
                   id="opnameDate"
                   type="date"
                   {...register('opnameDate')}
                 />
-                {errors.opnameDate && <p className="text-sm text-destructive">{errors.opnameDate.message}</p>}
+                {errors.opnameDate && <p className={bemBlock('error-message')}>{errors.opnameDate.message}</p>}
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="notes">Catatan</Label>
+            <div className={bemBlock('form-group')}>
+              <Label htmlFor="notes" className={bemBlock('form-label')}>Catatan</Label>
               <Input
                 id="notes"
                 placeholder="Keterangan tambahan..."
@@ -531,21 +534,21 @@ export default function OpnamePage() {
 
       {/* Reconcile Confirmation Dialog */}
       <AlertDialog open={showReconcileDialog} onOpenChange={setShowReconcileDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className={bemBlock('dialog', 'alert-dialog')}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Konfirmasi Rekonsiliasi</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className={bemBlock('dialog-title')}>Konfirmasi Rekonsiliasi</AlertDialogTitle>
+            <AlertDialogDescription className={bemBlock('dialog-description')}>
               {selectedOpname ? (
                 <>
                   <p>Anda akan merekonsiliasi opname untuk <strong>{selectedOpname.item.name}</strong>.</p>
-                  <div className="mt-2 space-y-1 text-sm">
+                  <div className={bemBlock('reconcile-info')}>
                     <p>Stok Sistem: <strong>{selectedOpname.systemStock} {selectedOpname.item.unit}</strong></p>
                     <p>Stok Fisik: <strong>{selectedOpname.physicalStock} {selectedOpname.item.unit}</strong></p>
-                    <p className={cn('font-medium', selectedOpname.difference > 0 ? 'text-green-600' : selectedOpname.difference < 0 ? 'text-red-600' : 'text-gray-600')}>
+                    <p className={bemBlock('difference-value', selectedOpname.difference > 0 ? 'text-green-600' : selectedOpname.difference < 0 ? 'text-red-600' : 'text-gray-600')}>
                       Selisih: {selectedOpname.difference > 0 ? '+' : ''}{selectedOpname.difference} {selectedOpname.item.unit}
                     </p>
                   </div>
-                  <p className="mt-2 text-destructive text-sm">
+                  <p className={bemBlock('warning-text')}>
                     Tindakan ini akan mengubah stok sistem menjadi stok fisik dan membuat transaksi penyesuaian. Tindakan ini tidak dapat dibatalkan.
                   </p>
                 </>
@@ -572,14 +575,14 @@ export default function OpnamePage() {
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className={bemBlock('dialog', 'alert-dialog')}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Batalkan Opname</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className={bemBlock('dialog-title')}>Batalkan Opname</AlertDialogTitle>
+            <AlertDialogDescription className={bemBlock('dialog-description')}>
               {selectedOpname ? (
                 <>
                   <p>Anda akan membatalkan opname untuk <strong>{selectedOpname.item.name}</strong>.</p>
-                  <p className="mt-2 text-destructive text-sm">
+                  <p className={bemBlock('warning-text')}>
                     Data opname akan ditandai sebagai dibatalkan dan tidak dapat direkonsiliasi.
                   </p>
                 </>

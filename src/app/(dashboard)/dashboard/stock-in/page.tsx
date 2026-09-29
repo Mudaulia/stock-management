@@ -36,6 +36,7 @@ import { Plus, Search, Loader2, Calendar, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast, Toaster } from '@/components/ui/toaster'
 import { format } from 'date-fns'
+import { bem, bemVariant } from '@/lib/bem'
 
 const stockInSchema = z.object({
   itemId: z.string().min(1, 'Barang wajib dipilih'),
@@ -230,61 +231,63 @@ export default function StockInPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : transactions.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Belum ada transaksi stok masuk</p>
-              <Button onClick={() => setIsDialogOpen(true)} className="mt-4">
-                <Plus className="mr-2 h-4 w-4" />
+            <div className="stock-in__empty-state">
+              <Package className="stock-in__empty-icon" />
+              <p className="stock-in__empty-text">Belum ada transaksi stok masuk</p>
+              <Button onClick={() => setIsDialogOpen(true)} className="stock-in__empty-button">
+                <Plus className="stock-in__empty-button-icon" />
                 Tambah Transaksi Pertama
               </Button>
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              <div className="stock-in__table-container">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">#</TableHead>
-                      <TableHead>Tanggal</TableHead>
-                      <TableHead>Barang</TableHead>
-                      <TableHead>Satuan</TableHead>
-                      <TableHead className="text-right">Jumlah</TableHead>
-                      <TableHead>Referensi</TableHead>
-                      <TableHead>Catatan</TableHead>
-                      <TableHead>Dibuat Oleh</TableHead>
+                      <TableHead className="stock-in__table-cell stock-in__table-cell--index">#{' '}</TableHead>
+                      <TableHead className="stock-in__table-cell stock-in__table-cell--date">Tanggal</TableHead>
+                      <TableHead className="stock-in__table-cell stock-in__table-cell--item">Barang</TableHead>
+                      <TableHead className="stock-in__table-cell stock-in__table-cell--unit">Satuan</TableHead>
+                      <TableHead className="stock-in__table-cell stock-in__table-cell--quantity stock-in__table-cell--number">Jumlah</TableHead>
+                      <TableHead className="stock-in__table-cell stock-in__table-cell--reference">Referensi</TableHead>
+                      <TableHead className="stock-in__table-cell stock-in__table-cell--notes">Catatan</TableHead>
+                      <TableHead className="stock-in__table-cell stock-in__table-cell--created">Dibuat Oleh</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {transactions.map((tx, index) => {
                       const globalIndex = (pagination.page - 1) * pagination.limit + index + 1
                       return (
-                        <TableRow key={tx.id}>
-                          <TableCell className="text-gray-500">{globalIndex}</TableCell>
-                          <TableCell>
+                        <TableRow key={tx.id} className="stock-in__table-row">
+                          <TableCell className="stock-in__table-cell stock-in__table-cell--index">
+                            {globalIndex}
+                          </TableCell>
+                          <TableCell className="stock-in__table-cell stock-in__table-cell--date">
                             {format(new Date(tx.transactionDate), 'dd MMM yyyy HH:mm')}
                           </TableCell>
-                          <TableCell>
-                            <div className="font-medium">{tx.item.name}</div>
-                            <div className="text-xs text-gray-500 font-mono">{tx.item.code}</div>
+                          <TableCell className="stock-in__table-cell stock-in__table-cell--item">
+                            <div className="stock-in__item-name">{tx.item.name}</div>
+                            <div className="stock-in__item-code">{tx.item.code}</div>
                           </TableCell>
-                          <TableCell>{tx.item.unit}</TableCell>
-                          <TableCell className="text-right font-mono font-medium text-green-600">
+                          <TableCell className="stock-in__table-cell stock-in__table-cell--unit">{tx.item.unit}</TableCell>
+                          <TableCell className="stock-in__table-cell stock-in__table-cell--quantity stock-in__table-cell--number stock-in__table-cell--quantity-mono">
                             +{tx.quantity.toLocaleString()}
                           </TableCell>
-                          <TableCell>{tx.reference || '-'}</TableCell>
-                          <TableCell className="max-w-[200px] truncate">{tx.notes || '-'}</TableCell>
-                          <TableCell>{tx.createdBy.fullName}</TableCell>
+                          <TableCell className="stock-in__table-cell stock-in__table-cell--reference">{tx.reference || '-'}</TableCell>
+                          <TableCell className="stock-in__table-cell stock-in__table-cell--notes stock-in__table-cell--notes-truncate">{tx.notes || '-'}</TableCell>
+                          <TableCell className="stock-in__table-cell stock-in__table-cell--created">{tx.createdBy.fullName}</TableCell>
                         </TableRow>
                       )
                     })}
                   </TableBody>
                   <TableFooter>
                     <TableRow>
-                      <TableCell colSpan={8} className="flex items-center justify-between">
-                        <div className="text-sm text-gray-500">
+                      <TableCell colSpan={8} className="stock-in__table-footer stock-in__table-footer--pagination">
+                        <div className="stock-in__pagination-info">
                           Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total}
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="stock-in__pagination-controls">
                           <Button
                             variant="outline"
                             size="sm"
