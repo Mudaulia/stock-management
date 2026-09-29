@@ -108,7 +108,7 @@ Database sudah berhasil di-seed.
 
 Login sudah berhasil.
 
-Dashboard sudah dapat diakses, tetapi sebelumnya ditemukan runtime error terkait userRole.
+Dashboard pastikan dapat diakses.
 
 Project menggunakan JWT melalui cookie auth-token.
 
@@ -129,61 +129,7 @@ password : viewer123
 
 Jangan mengubah credential tersebut tanpa alasan yang jelas.
 
-MASALAH YANG SUDAH DITEMUKAN
-
-Beberapa masalah sebelumnya sudah diselesaikan, antara lain:
-
-Konflik relation Prisma pada StockTransaction.
-
-Missing opposite relation pada Prisma.
-
-tailwindcss-animate belum terinstall.
-
-Dependency Prisma Client sudah berhasil generate.
-
-Database authentication sudah diperbaiki.
-
-Typo npx prismma db push.
-
-Format ts-node --compiler-options pada db:seed.
-
-Database seed sudah berhasil.
-
-Login sudah berhasil.
-
 Jangan mengulang perbaikan tersebut kecuali audit menunjukkan masalah yang sama masih muncul.
-
-MASALAH YANG SEDANG MENJADI PERHATIAN
-
-Dashboard sebelumnya mengalami:
-
-Unhandled Runtime Error
-
-TypeError: Cannot read properties of undefined (reading 'charAt')
-
-src/app/(dashboard)/dashboard/layout.tsx
-
-
-pada:
-
-userRole.charAt(0)
-
-
-Selain itu, terdapat indikasi masalah pada dashboard:
-
-currentStock: {
-  lte: prisma.item.fields.minStock
-}
-
-
-yang tidak tepat untuk membandingkan dua field database.
-
-Ada juga penggunaan:
-
-cn(...)
-
-
-di dashboard tetapi perlu dipastikan import-nya tersedia.
 
 Jangan hanya memperbaiki error yang terlihat. Setelah project dipelajari, lakukan audit menyeluruh.
 
@@ -193,7 +139,6 @@ PHASE 1 — PELAJARI PROJECT
 Sebelum mengubah kode, baca dan pahami:
 
 ERD.md
-SPRINT_BREAKDOWN.md
 user_story_dan_kebutuhan_teknis.md
 
 

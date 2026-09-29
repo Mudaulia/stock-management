@@ -42,7 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, Search, Loader2, Calendar, Package, AlertTriangle, CheckCircle, XCircle, RotateCcw, Eye } from 'lucide-react'
+import { Plus, Search, Loader2, Calendar, Package, AlertTriangle, CheckCircle, XCircle, RotateCcw, Eye, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast, Toaster } from '@/components/ui/toaster'
 import { format } from 'date-fns'
@@ -54,6 +54,8 @@ const opnameSchema = z.object({
   notes: z.string().optional(),
   opnameDate: z.string().min(1, 'Tanggal wajib diisi'),
 })
+
+const CANCELLED = 'CANCELLED'
 
 type OpnameForm = z.infer<typeof opnameSchema>
 
@@ -271,11 +273,11 @@ export default function OpnamePage() {
   const bemBlock = bem('opname')
 
   return (
-    <div className={bemBlock()}>
+    <div className={bemBlock.b()}>
       <Toaster />
 
       {/* Header & Actions */}
-      <div className={bemBlock('header')}>
+      <div className={bemBlock.b('header')}>
         <div>
           <h1 className={bemBlock('title')}>Stok Opname</h1>
           <p className={bemBlock('subtitle')}>Pencatatan stok fisik vs sistem</p>
@@ -396,18 +398,19 @@ export default function OpnamePage() {
                               >
                                 <CheckCircle className={bemBlock('action-icon', 'reconcile')} />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setSelectedOpname(op)
-                                  setShowCancelDialog(true)
-                                }}
-                                disabled={op.status !== 'PENDING'}
-                                title="Batalkan"
-                              >
-                                <XCircle className={bemBlock('action-icon', 'cancel')} />
-                              </Button>
+                              {op.status === 'PENDING' && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setSelectedOpname(op)
+                                    setShowCancelDialog(true)
+                                  }}
+                                  title="Batalkan"
+                                >
+                                  <Trash2 className={bemBlock('action-icon', 'cancel')} />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"

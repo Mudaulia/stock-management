@@ -343,9 +343,6 @@
 .stock-in__table-cell--created {
 }
 
-.stock-in__table-footer {
-}
-
 .stock-in__table-footer--pagination {
   @apply flex items-center justify-between;
 }
@@ -435,9 +432,6 @@
 }
 
 .stock-out__table-cell--created {
-}
-
-.stock-out__table-footer {
 }
 
 .stock-out__table-footer--pagination {
@@ -654,6 +648,205 @@
 }
 
 .opname__dialog-description {
+}
+
+.opname__dialog-footer {
+  @apply flex justify-end gap-2;
+}
+
+.opname__dialog-footer--cancel {
+  @apply mr-auto;
+}
+
+.opname__dialog-footer--submit {
+}
+
+/* Stock Out Page BEM Classes */
+.stock-out__empty-state {
+  @apply text-center py-12;
+}
+
+.stock-out__empty-icon {
+  @apply h-12 w-12 text-gray-300 mx-auto mb-4;
+}
+
+.stock-out__empty-text {
+  @apply text-gray-500;
+}
+
+.stock-out__empty-button {
+  @apply mt-4;
+}
+
+.stock-out__empty-button-icon {
+  @apply mr-2 h-4 w-4;
+}
+
+.stock-out__table-container {
+  @apply overflow-x-auto;
+}
+
+.stock-out__table {
+  @apply w-full;
+}
+
+.stock-out__table-row {
+  @apply border-b transition-colors;
+}
+
+.stock-out__table-cell {
+  @apply py-3 text-sm;
+}
+
+.stock-out__table-cell--index {
+  @apply text-gray-500;
+}
+
+.stock-out__table-cell--date {
+}
+
+.stock-out__table-cell--item {
+}
+
+.stock-out__item-name {
+  @apply font-medium;
+}
+
+.stock-out__item-code {
+  @apply text-xs text-gray-500 font-mono;
+}
+
+.stock-out__table-cell--unit {
+}
+
+.stock-out__table-cell--quantity {
+  @apply text-right font-mono font-medium text-red-600;
+}
+
+.stock-out__table-cell--quantity-mono {
+  @apply font-mono font-medium text-red-600;
+}
+
+.stock-out__table-cell--reference {
+}
+
+.stock-out__table-cell--notes {
+}
+
+.stock-out__table-cell--notes-truncate {
+  @apply max-w-[200px] truncate;
+}
+
+.stock-out__table-cell--created {
+}
+
+.stock-out__table-footer {
+}
+
+.stock-out__table-footer--pagination {
+  @apply flex items-center justify-between;
+}
+
+.stock-out__pagination-info {
+  @apply text-sm text-gray-500;
+}
+
+.stock-out__pagination-controls {
+  @apply flex items-center space-x-2;
+}
+
+/* Stock In Page BEM Classes */
+.stock-in__empty-state {
+  @apply text-center py-12;
+}
+
+.stock-in__empty-icon {
+  @apply h-12 w-12 text-gray-300 mx-auto mb-4;
+}
+
+.stock-in__empty-text {
+  @apply text-gray-500;
+}
+
+.stock-in__empty-button {
+  @apply mt-4;
+}
+
+.stock-in__empty-button-icon {
+  @apply mr-2 h-4 w-4;
+}
+
+.stock-in__table-container {
+  @apply overflow-x-auto;
+}
+
+.stock-in__table {
+  @apply w-full;
+}
+
+.stock-in__table-row {
+  @apply border-b transition-colors;
+}
+
+.stock-in__table-cell {
+  @apply py-3 text-sm;
+}
+
+.stock-in__table-cell--index {
+  @apply text-gray-500;
+}
+
+.stock-in__table-cell--date {
+}
+
+.stock-in__table-cell--item {
+}
+
+.stock-in__item-name {
+  @apply font-medium;
+}
+
+.stock-in__item-code {
+  @apply text-xs text-gray-500 font-mono;
+}
+
+.stock-in__table-cell--unit {
+}
+
+.stock-in__table-cell--quantity {
+  @apply text-right font-mono font-medium text-green-600;
+}
+
+.stock-in__table-cell--quantity-mono {
+  @apply font-mono font-medium text-green-600;
+}
+
+.stock-in__table-cell--reference {
+}
+
+.stock-in__table-cell--notes {
+}
+
+.stock-in__table-cell--notes-truncate {
+  @apply max-w-[200px] truncate;
+}
+
+.stock-in__table-cell--created {
+}
+
+.stock-in__table-footer {
+}
+
+.stock-in__table-footer--pagination {
+  @apply flex items-center justify-between;
+}
+
+.stock-in__pagination-info {
+  @apply text-sm text-gray-500;
+}
+
+.stock-in__pagination-controls {
+  @apply flex items-center space-x-2;
 }
 
 .opname__dialog-form {

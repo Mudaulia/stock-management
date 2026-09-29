@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -496,12 +496,11 @@ export default function ItemsPage() {
               <div className="space-y-2">
                 <Label htmlFor="unit">Satuan *</Label>
                 <Select
-  value=""
-  onValueChange={(v: string) =>
-    setValue("unit", v)
-  }
->
-
+                  value={useWatch({ name: "unit" }) || "PCS"}
+                  onValueChange={(v: string) =>
+                    setValue("unit", v)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih satuan" />
                   </SelectTrigger>
