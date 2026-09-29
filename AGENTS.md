@@ -1,4 +1,4 @@
-# ROLE.md — Stock Management
+# AGENTS.md — Stock Management
 
 ## 1. Role
 
