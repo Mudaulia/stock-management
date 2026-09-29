@@ -64,6 +64,11 @@ export async function PUT(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
+    // Role check: Only ADMIN and WAREHOUSE_STAFF can update opname
+    if (session.user.role !== 'ADMIN' && session.user.role !== 'WAREHOUSE_STAFF') {
+      return NextResponse.json({ message: 'Forbidden: Insufficient permissions' }, { status: 403 })
+    }
+
     const { id } = await params
     const body = await request.json()
     const validation = updateOpnameSchema.safeParse(body)
@@ -151,6 +156,11 @@ export async function DELETE(
     const session = await getServerSession()
     if (!session) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Role check: Only ADMIN and WAREHOUSE_STAFF can cancel opname
+    if (session.user.role !== 'ADMIN' && session.user.role !== 'WAREHOUSE_STAFF') {
+      return NextResponse.json({ message: 'Forbidden: Insufficient permissions' }, { status: 403 })
     }
 
     const { id } = await params

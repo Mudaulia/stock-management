@@ -49,11 +49,10 @@ prisma/schema.prisma
 Dokumentasi requirement utama berada di:
 
 ERD.md
-SPRINT_BREAKDOWN.md
 user_story_dan_kebutuhan_teknis.md
 
 
-Ketiga dokumen tersebut adalah referensi utama untuk memahami desain sistem dan requirement.
+Kedua dokumen tersebut adalah referensi utama untuk memahami desain sistem dan requirement.
 
 Namun jangan menganggap dokumentasi selalu 100% sama dengan implementasi saat ini. Kamu harus membandingkan:
 

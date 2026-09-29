@@ -32,9 +32,9 @@ export function Sidebar({ userRole }: SidebarProps) {
   return (
     <>
       {/* Mobile menu button */}
-      <div className={bemBlock('mobile-header')}>
-        <div className={bemBlock('mobile-header-content')}>
-          <h1 className={bemBlock('mobile-header-title')}>Sistem Manajemen Stok</h1>
+      <div className={bemBlock.e('mobile-header')}>
+        <div className={bemBlock.e('mobile-header-content')}>
+          <h1 className={bemBlock.e('mobile-header-title')}>Sistem Manajemen Stok</h1>
           <Button
             variant="ghost"
             size="icon"
@@ -48,17 +48,17 @@ export function Sidebar({ userRole }: SidebarProps) {
       {/* Mobile menu overlay */}
       {mobileMenuOpen && (
         <div
-          className={bemBlock('mobile-overlay')}
+          className={bemBlock.e('mobile-overlay')}
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className={bemBlock('mobile-menu')}>
-          <div className={bemBlock('mobile-menu-content')}>
-            <div className={bemBlock('mobile-menu-header')}>
-              <h1 className={bemBlock('mobile-menu-title')}>Sistem Manajemen Stok</h1>
+        <div className={bemBlock.e('mobile-menu')}>
+          <div className={bemBlock.e('mobile-menu-content')}>
+            <div className={bemBlock.e('mobile-menu-header')}>
+              <h1 className={bemBlock.e('mobile-menu-title')}>Sistem Manajemen Stok</h1>
               <Button
                 variant="ghost"
                 size="icon"
@@ -67,24 +67,24 @@ export function Sidebar({ userRole }: SidebarProps) {
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <div className={bemBlock('mobile-menu-body')}>
-              <div className={bemBlock('mobile-menu-search')}>
+            <div className={bemBlock.e('mobile-menu-body')}>
+              <div className={bemBlock.e('mobile-menu-search')}>
                 <Input
                   placeholder="Cari..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className={bemBlock('mobile-menu-search-input')}
+                  className={bemBlock.e('mobile-menu-search-input')}
                 />
               </div>
-              <nav className={bemBlock('mobile-menu-nav')}>
+              <nav className={bemBlock.e('mobile-menu-nav')}>
                 {filteredNavigation.map((item) => (
                   <a
                     key={item.name}
                     href={item.href}
-                    className={bemBlock('mobile-menu-nav-item')}
+                    className={bemBlock.e('mobile-menu-nav-item')}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <item.icon className={bemBlock('mobile-menu-nav-item-icon')} />
+                    <item.icon className={bemBlock.e('mobile-menu-nav-item-icon')} />
                     {item.name}
                   </a>
                 ))}
@@ -97,58 +97,58 @@ export function Sidebar({ userRole }: SidebarProps) {
       {/* Desktop sidebar */}
       <div
         className={cn(
-          bemBlock('desktop'),
-          !sidebarOpen && bemBlock('desktop', 'collapsed')
+          bemBlock.e('desktop'),
+          !sidebarOpen && bemBlock.m('collapsed')
         )}
       >
-        <div className={bemBlock('desktop-content')}>
-          <div className={bemBlock('desktop-header')}>
-            <h1 className={bemBlock('desktop-title')}>Sistem Manajemen Stok</h1>
+        <div className={bemBlock.e('desktop-content')}>
+          <div className={bemBlock.e('desktop-header')}>
+            <h1 className={bemBlock.e('desktop-title')}>Sistem Manajemen Stok</h1>
             <Button
               variant="ghost"
               size="icon"
-              className={bemBlock('desktop-menu-toggle')}
+              className={bemBlock.e('desktop-menu-toggle')}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <Menu className="h-5 w-5" />
             </Button>
           </div>
-          <div className={bemBlock('desktop-body')}>
-            <div className={bemBlock('desktop-search')}>
+          <div className={bemBlock.e('desktop-body')}>
+            <div className={bemBlock.e('desktop-search')}>
               <Input
                 placeholder="Cari..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={bemBlock('desktop-search-input')}
+                className={bemBlock.e('desktop-search-input')}
               />
             </div>
-            <nav className={bemBlock('desktop-nav')}>
+            <nav className={bemBlock.e('desktop-nav')}>
               {filteredNavigation.map((item) => (
                 <a
                   key={item.name}
                   href={item.href}
-                  className={bemBlock('desktop-nav-item')}
+                  className={bemBlock.e('desktop-nav-item')}
                 >
-                  <item.icon className={bemBlock('desktop-nav-item-icon')} />
+                  <item.icon className={bemBlock.e('desktop-nav-item-icon')} />
                   {item.name}
                 </a>
               ))}
             </nav>
           </div>
-          <div className={bemBlock('desktop-footer')}>
-            <div className={bemBlock('desktop-user-info')}>
-              <div className={bemBlock('desktop-user-avatar')}>
-                <User className={bemBlock('desktop-user-avatar-icon')} />
+          <div className={bemBlock.e('desktop-footer')}>
+            <div className={bemBlock.e('desktop-user-info')}>
+              <div className={bemBlock.e('desktop-user-avatar')}>
+                <User className={bemBlock.e('desktop-user-avatar-icon')} />
               </div>
-              <div className={bemBlock('desktop-user-details')}>
-                <p className={bemBlock('desktop-user-name')}>Admin</p>
-                <p className={bemBlock('desktop-user-role')}>{userRole}</p>
+              <div className={bemBlock.e('desktop-user-details')}>
+                <p className={bemBlock.e('desktop-user-name')}>Admin</p>
+                <p className={bemBlock.e('desktop-user-role')}>{userRole}</p>
               </div>
             </div>
-            <Button variant="outline" className={bemBlock('desktop-logout-button')} onClick={() => {
+            <Button variant="outline" className={bemBlock.e('desktop-logout-button')} onClick={() => {
               window.location.href = '/api/auth/logout'
             }}>
-              <LogOut className={bemBlock('desktop-logout-button-icon')} />
+              <LogOut className={bemBlock.e('desktop-logout-button-icon')} />
               Keluar
             </Button>
           </div>
@@ -168,33 +168,33 @@ export function Topbar({ }: TopbarProps) {
   const bemBlock = bem('topbar')
 
   return (
-    <div className={bemBlock()}>
-      <div className={bemBlock('header')}>
-        <div className={bemBlock('header-left')}>
+    <div className={bemBlock.b()}>
+      <div className={bemBlock.e('header')}>
+        <div className={bemBlock.e('header-left')}>
           <Button
             variant="ghost"
             size="icon"
-            className={bemBlock('header-menu-toggle')}
+            className={bemBlock.e('header-menu-toggle')}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <h1 className={bemBlock('header-title')}>Dashboard</h1>
+          <h1 className={bemBlock.e('header-title')}>Dashboard</h1>
         </div>
-        <div className={bemBlock('header-right')}>
-          <div className={bemBlock('header-user-info')}>
-            <div className={bemBlock('header-user-avatar')}>
-              <User className={bemBlock('header-user-avatar-icon')} />
+        <div className={bemBlock.e('header-right')}>
+          <div className={bemBlock.e('header-user-info')}>
+            <div className={bemBlock.e('header-user-avatar')}>
+              <User className={bemBlock.e('header-user-avatar-icon')} />
             </div>
-            <div className={bemBlock('header-user-details')}>
-              <p className={bemBlock('header-user-name')}>Admin</p>
-              <p className={bemBlock('header-user-role')}>Administrator</p>
+            <div className={bemBlock.e('header-user-details')}>
+              <p className={bemBlock.e('header-user-name')}>Admin</p>
+              <p className={bemBlock.e('header-user-role')}>Administrator</p>
             </div>
           </div>
-          <Button variant="outline" className={bemBlock('header-logout-button')} onClick={() => {
+          <Button variant="outline" className={bemBlock.e('header-logout-button')} onClick={() => {
             window.location.href = '/api/auth/logout'
           }}>
-            <LogOut className={bemBlock('header-logout-button-icon')} />
+            <LogOut className={bemBlock.e('header-logout-button-icon')} />
             Keluar
           </Button>
         </div>

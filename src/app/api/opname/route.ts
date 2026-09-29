@@ -94,6 +94,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
+    // Role check: Only ADMIN and WAREHOUSE_STAFF can create opname
+    if (session.user.role !== 'ADMIN' && session.user.role !== 'WAREHOUSE_STAFF') {
+      return NextResponse.json({ message: 'Forbidden: Insufficient permissions' }, { status: 403 })
+    }
+
     const body = await request.json()
     const validation = opnameSchema.safeParse(body)
 

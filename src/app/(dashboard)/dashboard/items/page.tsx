@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -122,6 +122,7 @@ export default function ItemsPage() {
     reset,
     formState: { errors },
     setValue,
+    watch,
   } = useForm<ItemForm>({
     resolver: zodResolver(itemSchema),
     defaultValues: {
@@ -133,6 +134,8 @@ export default function ItemsPage() {
       description: "",
     },
   });
+
+  const watchedUnit = watch("unit");
 
   const fetchItems = async () => {
     setIsLoading(true);
@@ -156,6 +159,10 @@ export default function ItemsPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -496,7 +503,7 @@ export default function ItemsPage() {
               <div className="space-y-2">
                 <Label htmlFor="unit">Satuan *</Label>
                 <Select
-                  value={useWatch({ name: "unit" }) || "PCS"}
+                  value={watchedUnit || "PCS"}
                   onValueChange={(v: string) =>
                     setValue("unit", v)
                   }

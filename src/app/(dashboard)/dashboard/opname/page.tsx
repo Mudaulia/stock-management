@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -176,6 +176,11 @@ export default function OpnamePage() {
     }
   }
 
+  useEffect(() => {
+    fetchOpnames()
+    fetchItems()
+  }, [])
+
   const onSubmit = async (data: OpnameForm) => {
     setIsSubmitting(true)
     try {
@@ -277,10 +282,10 @@ export default function OpnamePage() {
       <Toaster />
 
       {/* Header & Actions */}
-      <div className={bemBlock.b('header')}>
+      <div className={bemBlock.e('header')}>
         <div>
-          <h1 className={bemBlock('title')}>Stok Opname</h1>
-          <p className={bemBlock('subtitle')}>Pencatatan stok fisik vs sistem</p>
+          <h1 className={bemBlock.e('title')}>Stok Opname</h1>
+          <p className={bemBlock.e('subtitle')}>Pencatatan stok fisik vs sistem</p>
         </div>
         <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
@@ -290,21 +295,21 @@ export default function OpnamePage() {
 
       {/* Search & Filter */}
       <Card>
-        <CardContent className={bemBlock('filter-card')}>
-          <form onSubmit={handleSearch} className={bemBlock('filter-form')}>
-            <div className={bemBlock('search-input-wrapper')}>
-              <Search className={bemBlock('search-icon')} />
+        <CardContent className={bemBlock.e('filter-card')}>
+          <form onSubmit={handleSearch} className={bemBlock.e('filter-form')}>
+            <div className={bemBlock.e('search-input-wrapper')}>
+              <Search className={bemBlock.e('search-icon')} />
               <Input
                 placeholder="Cari barang, catatan..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className={bemBlock('search-input')}
+                className={bemBlock.e('search-input')}
               />
             </div>
-            <div className={bemBlock('filter-group')}>
-              <Label className={bemBlock('filter-label')}>Status:</Label>
+            <div className={bemBlock.e('filter-group')}>
+              <Label className={bemBlock.e('filter-label')}>Status:</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className={bemBlock('filter-select')}>
+                <SelectTrigger className={bemBlock.e('filter-select')}>
                   <SelectValue placeholder="Semua" />
                 </SelectTrigger>
                 <SelectContent>
@@ -315,13 +320,13 @@ export default function OpnamePage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className={bemBlock('filter-group')}>
-              <Label className={bemBlock('filter-label')}>Dari:</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={bemBlock('filter-date')} />
+            <div className={bemBlock.e('filter-group')}>
+              <Label className={bemBlock.e('filter-label')}>Dari:</Label>
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={bemBlock.e('filter-date')} />
             </div>
-            <div className={bemBlock('filter-group')}>
-              <Label className={bemBlock('filter-label')}>Sampai:</Label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={bemBlock('filter-date')} />
+            <div className={bemBlock.e('filter-group')}>
+              <Label className={bemBlock.e('filter-label')}>Sampai:</Label>
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={bemBlock.e('filter-date')} />
             </div>
             <Button type="submit" variant="outline">
               <Search className="mr-2 h-4 w-4" />
@@ -333,36 +338,36 @@ export default function OpnamePage() {
 
       {/* Table */}
       <Card>
-        <CardContent className={bemBlock('table-card')}>
+        <CardContent className={bemBlock.e('table-card')}>
           {isLoading ? (
-            <div className={bemBlock('loading-state')}>
-              <Loader2 className={bemBlock('loading-icon')} />
+            <div className={bemBlock.e('loading-state')}>
+              <Loader2 className={bemBlock.e('loading-icon')} />
             </div>
           ) : opnames.length === 0 ? (
-            <div className={bemBlock('empty-state')}>
-              <Package className={bemBlock('empty-icon')} />
-              <p className={bemBlock('empty-text')}>Belum ada data opname</p>
-              <Button onClick={() => setIsDialogOpen(true)} className={bemBlock('empty-button')}>
+            <div className={bemBlock.e('empty-state')}>
+              <Package className={bemBlock.e('empty-icon')} />
+              <p className={bemBlock.e('empty-text')}>Belum ada data opname</p>
+              <Button onClick={() => setIsDialogOpen(true)} className={bemBlock.e('empty-button')}>
                 <Plus className="mr-2 h-4 w-4" />
                 Buat Opname Pertama
               </Button>
             </div>
           ) : (
             <>
-              <div className={bemBlock('table-container')}>
+              <div className={bemBlock.e('table-container')}>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className={bemBlock('table-header-cell', 'index')}>#</TableHead>
-                      <TableHead className={bemBlock('table-header-cell', 'date')}>Tanggal</TableHead>
-                      <TableHead className={bemBlock('table-header-cell', 'item')}>Barang</TableHead>
-                      <TableHead className={bemBlock('table-header-cell', 'system-stock', 'right')}>Stok Sistem</TableHead>
-                      <TableHead className={bemBlock('table-header-cell', 'physical-stock', 'right')}>Stok Fisik</TableHead>
-                      <TableHead className={bemBlock('table-header-cell', 'difference', 'right')}>Selisih</TableHead>
-                      <TableHead className={bemBlock('table-header-cell', 'status')}>Status</TableHead>
-                      <TableHead className={bemBlock('table-header-cell', 'notes')}>Catatan</TableHead>
-                      <TableHead className={bemBlock('table-header-cell', 'created-by')}>Dibuat Oleh</TableHead>
-                      <TableHead className={bemBlock('table-header-cell', 'actions', 'w-32')}>Aksi</TableHead>
+                      <TableHead className={bemBlock.e('table-header-cell', 'index')}>#</TableHead>
+                      <TableHead className={bemBlock.e('table-header-cell', 'date')}>Tanggal</TableHead>
+                      <TableHead className={bemBlock.e('table-header-cell', 'item')}>Barang</TableHead>
+                      <TableHead className={cn(bemBlock.e('table-header-cell', 'system-stock'), 'text-right')}>Stok Sistem</TableHead>
+                      <TableHead className={cn(bemBlock.e('table-header-cell', 'physical-stock'), 'text-right')}>Stok Fisik</TableHead>
+                      <TableHead className={cn(bemBlock.e('table-header-cell', 'difference'), 'text-right')}>Selisih</TableHead>
+                      <TableHead className={bemBlock.e('table-header-cell', 'status')}>Status</TableHead>
+                      <TableHead className={bemBlock.e('table-header-cell', 'notes')}>Catatan</TableHead>
+                      <TableHead className={bemBlock.e('table-header-cell', 'created-by')}>Dibuat Oleh</TableHead>
+                      <TableHead className={cn(bemBlock.e('table-header-cell', 'actions'), 'w-32')}>Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -370,22 +375,22 @@ export default function OpnamePage() {
                       const globalIndex = (pagination.page - 1) * pagination.limit + index + 1
                       return (
                         <TableRow key={op.id}>
-                          <TableCell className={bemBlock('table-cell', 'index')}>{globalIndex}</TableCell>
-                          <TableCell className={bemBlock('table-cell', 'date')}>
+                          <TableCell className={bemBlock.e('table-cell', 'index')}>{globalIndex}</TableCell>
+                          <TableCell className={bemBlock.e('table-cell', 'date')}>
                             {format(new Date(op.opnameDate), 'dd MMM yyyy')}
                           </TableCell>
-                          <TableCell className={bemBlock('table-cell', 'item')}>
-                            <div className={bemBlock('item-name')}>{op.item.name}</div>
-                            <div className={bemBlock('item-code')}>{op.item.code}</div>
+                          <TableCell className={bemBlock.e('table-cell', 'item')}>
+                            <div className={bemBlock.e('item-name')}>{op.item.name}</div>
+                            <div className={bemBlock.e('item-code')}>{op.item.code}</div>
                           </TableCell>
-                          <TableCell className={bemBlock('table-cell', 'system-stock', 'right', 'font-mono')}>{op.systemStock.toLocaleString()} {op.item.unit}</TableCell>
-                          <TableCell className={bemBlock('table-cell', 'physical-stock', 'right', 'font-mono')}>{op.physicalStock.toLocaleString()} {op.item.unit}</TableCell>
-                          <TableCell className={bemBlock('table-cell', 'difference', 'right')}>{getDifferenceBadge(op.difference)}</TableCell>
-                          <TableCell className={bemBlock('table-cell', 'status')}>{getStatusBadge(op.status)}</TableCell>
-                          <TableCell className={bemBlock('table-cell', 'notes', 'max-w-[200px]', 'truncate')}>{op.notes || '-'}</TableCell>
-                          <TableCell className={bemBlock('table-cell', 'created-by')}>{op.createdBy.fullName}</TableCell>
+                          <TableCell className={cn(bemBlock.e('table-cell', 'system-stock'), 'text-right', 'font-mono')}>{op.systemStock.toLocaleString()} {op.item.unit}</TableCell>
+                          <TableCell className={cn(bemBlock.e('table-cell', 'physical-stock'), 'text-right', 'font-mono')}>{op.physicalStock.toLocaleString()} {op.item.unit}</TableCell>
+                          <TableCell className={cn(bemBlock.e('table-cell', 'difference'), 'text-right')}>{getDifferenceBadge(op.difference)}</TableCell>
+                          <TableCell className={bemBlock.e('table-cell', 'status')}>{getStatusBadge(op.status)}</TableCell>
+                          <TableCell className={cn(bemBlock.e('table-cell', 'notes'), 'max-w-[200px]', 'truncate')}>{op.notes || '-'}</TableCell>
+                          <TableCell className={bemBlock.e('table-cell', 'created-by')}>{op.createdBy.fullName}</TableCell>
                           <TableCell>
-                            <div className={bemBlock('actions')}>
+                            <div className={bemBlock.e('actions')}>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -396,7 +401,7 @@ export default function OpnamePage() {
                                 disabled={op.status !== 'PENDING'}
                                 title="Rekonsiliasi"
                               >
-                                <CheckCircle className={bemBlock('action-icon', 'reconcile')} />
+                                <CheckCircle className={bemBlock.e('action-icon', 'reconcile')} />
                               </Button>
                               {op.status === 'PENDING' && (
                                 <Button
@@ -408,7 +413,7 @@ export default function OpnamePage() {
                                   }}
                                   title="Batalkan"
                                 >
-                                  <Trash2 className={bemBlock('action-icon', 'cancel')} />
+                                  <Trash2 className={bemBlock.e('action-icon', 'cancel')} />
                                 </Button>
                               )}
                               <Button
@@ -421,7 +426,7 @@ export default function OpnamePage() {
                                 disabled={op.status !== 'RECONCILED'}
                                 title="Lihat Detail"
                               >
-                                <Eye className={bemBlock('action-icon', 'view')} />
+                                <Eye className={bemBlock.e('action-icon', 'view')} />
                               </Button>
                             </div>
                           </TableCell>
@@ -431,11 +436,11 @@ export default function OpnamePage() {
                   </TableBody>
                   <TableFooter>
                     <TableRow>
-                      <TableCell colSpan={10} className={bemBlock('table-footer', 'flex', 'items-center', 'justify-between')}>
-                        <div className={bemBlock('pagination-info')}>
+                      <TableCell colSpan={10} className={cn(bemBlock.e('table-footer'), 'flex', 'items-center', 'justify-between')}>
+                        <div className={bemBlock.e('pagination-info')}>
                           Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total}
                         </div>
-                        <div className={bemBlock('pagination-controls')}>
+                        <div className={bemBlock.e('pagination-controls')}>
                           <Button
                             variant="outline"
                             size="sm"
@@ -465,16 +470,16 @@ export default function OpnamePage() {
 
       {/* Create Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className={bemBlock('dialog', 'sm:max-w-[500px]')}>
+        <DialogContent className={bemBlock.e('dialog', 'sm:max-w-[500px]')}>
           <DialogHeader>
-            <DialogTitle className={bemBlock('dialog-title')}>Buat Opname Baru</DialogTitle>
-            <DialogDescription className={bemBlock('dialog-description')}>Catat stok fisik barang untuk dibandingkan dengan stok sistem</DialogDescription>
+            <DialogTitle className={bemBlock.e('dialog-title')}>Buat Opname Baru</DialogTitle>
+            <DialogDescription className={bemBlock.e('dialog-description')}>Catat stok fisik barang untuk dibandingkan dengan stok sistem</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className={bemBlock('dialog-form')}>
-            <div className={bemBlock('form-group')}>
-              <Label htmlFor="itemId" className={bemBlock('form-label')}>Barang *</Label>
+          <form onSubmit={handleSubmit(onSubmit)} className={bemBlock.e('dialog-form')}>
+            <div className={bemBlock.e('form-group')}>
+              <Label htmlFor="itemId" className={bemBlock.e('form-label')}>Barang *</Label>
               <Select onValueChange={(v: string) => setValue('itemId', v)}>
-                <SelectTrigger className={bemBlock('form-select')}>
+                <SelectTrigger className={bemBlock.e('form-select')}>
                   <SelectValue placeholder="Pilih barang" />
                 </SelectTrigger>
                 <SelectContent>
@@ -485,31 +490,31 @@ export default function OpnamePage() {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.itemId && <p className={bemBlock('error-message')}>{errors.itemId.message}</p>}
+              {errors.itemId && <p className={bemBlock.e('error-message')}>{errors.itemId.message}</p>}
             </div>
-            <div className={bemBlock('form-grid')}>
-              <div className={bemBlock('form-group')}>
-                <Label htmlFor="physicalStock" className={bemBlock('form-label')}>Stok Fisik *</Label>
+            <div className={bemBlock.e('form-grid')}>
+              <div className={bemBlock.e('form-group')}>
+                <Label htmlFor="physicalStock" className={bemBlock.e('form-label')}>Stok Fisik *</Label>
                 <Input
                   id="physicalStock"
                   type="number"
                   min="0"
                   {...register('physicalStock')}
                 />
-                {errors.physicalStock && <p className={bemBlock('error-message')}>{errors.physicalStock.message}</p>}
+                {errors.physicalStock && <p className={bemBlock.e('error-message')}>{errors.physicalStock.message}</p>}
               </div>
-              <div className={bemBlock('form-group')}>
-                <Label htmlFor="opnameDate" className={bemBlock('form-label')}>Tanggal Opname *</Label>
+              <div className={bemBlock.e('form-group')}>
+                <Label htmlFor="opnameDate" className={bemBlock.e('form-label')}>Tanggal Opname *</Label>
                 <Input
                   id="opnameDate"
                   type="date"
                   {...register('opnameDate')}
                 />
-                {errors.opnameDate && <p className={bemBlock('error-message')}>{errors.opnameDate.message}</p>}
+                {errors.opnameDate && <p className={bemBlock.e('error-message')}>{errors.opnameDate.message}</p>}
               </div>
             </div>
-            <div className={bemBlock('form-group')}>
-              <Label htmlFor="notes" className={bemBlock('form-label')}>Catatan</Label>
+            <div className={bemBlock.e('form-group')}>
+              <Label htmlFor="notes" className={bemBlock.e('form-label')}>Catatan</Label>
               <Input
                 id="notes"
                 placeholder="Keterangan tambahan..."
@@ -537,21 +542,21 @@ export default function OpnamePage() {
 
       {/* Reconcile Confirmation Dialog */}
       <AlertDialog open={showReconcileDialog} onOpenChange={setShowReconcileDialog}>
-        <AlertDialogContent className={bemBlock('dialog', 'alert-dialog')}>
+        <AlertDialogContent className={bemBlock.e('dialog', 'alert-dialog')}>
           <AlertDialogHeader>
-            <AlertDialogTitle className={bemBlock('dialog-title')}>Konfirmasi Rekonsiliasi</AlertDialogTitle>
-            <AlertDialogDescription className={bemBlock('dialog-description')}>
+            <AlertDialogTitle className={bemBlock.e('dialog-title')}>Konfirmasi Rekonsiliasi</AlertDialogTitle>
+            <AlertDialogDescription className={bemBlock.e('dialog-description')}>
               {selectedOpname ? (
                 <>
                   <p>Anda akan merekonsiliasi opname untuk <strong>{selectedOpname.item.name}</strong>.</p>
-                  <div className={bemBlock('reconcile-info')}>
+                  <div className={bemBlock.e('reconcile-info')}>
                     <p>Stok Sistem: <strong>{selectedOpname.systemStock} {selectedOpname.item.unit}</strong></p>
                     <p>Stok Fisik: <strong>{selectedOpname.physicalStock} {selectedOpname.item.unit}</strong></p>
-                    <p className={bemBlock('difference-value', selectedOpname.difference > 0 ? 'text-green-600' : selectedOpname.difference < 0 ? 'text-red-600' : 'text-gray-600')}>
+                    <p className={bemBlock.e('difference-value', selectedOpname.difference > 0 ? 'text-green-600' : selectedOpname.difference < 0 ? 'text-red-600' : 'text-gray-600')}>
                       Selisih: {selectedOpname.difference > 0 ? '+' : ''}{selectedOpname.difference} {selectedOpname.item.unit}
                     </p>
                   </div>
-                  <p className={bemBlock('warning-text')}>
+                  <p className={bemBlock.e('warning-text')}>
                     Tindakan ini akan mengubah stok sistem menjadi stok fisik dan membuat transaksi penyesuaian. Tindakan ini tidak dapat dibatalkan.
                   </p>
                 </>
@@ -578,14 +583,14 @@ export default function OpnamePage() {
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent className={bemBlock('dialog', 'alert-dialog')}>
+        <AlertDialogContent className={bemBlock.e('dialog', 'alert-dialog')}>
           <AlertDialogHeader>
-            <AlertDialogTitle className={bemBlock('dialog-title')}>Batalkan Opname</AlertDialogTitle>
-            <AlertDialogDescription className={bemBlock('dialog-description')}>
+            <AlertDialogTitle className={bemBlock.e('dialog-title')}>Batalkan Opname</AlertDialogTitle>
+            <AlertDialogDescription className={bemBlock.e('dialog-description')}>
               {selectedOpname ? (
                 <>
                   <p>Anda akan membatalkan opname untuk <strong>{selectedOpname.item.name}</strong>.</p>
-                  <p className={bemBlock('warning-text')}>
+                  <p className={bemBlock.e('warning-text')}>
                     Data opname akan ditandai sebagai dibatalkan dan tidak dapat direkonsiliasi.
                   </p>
                 </>
