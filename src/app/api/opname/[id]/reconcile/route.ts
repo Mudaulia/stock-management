@@ -2,16 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { handleApiError, successResponse, ApiError } from '@/lib/api-response'
 
 const reconcileSchema = z.object({
   notes: z.string().optional(),
 })
 
-class StaleOpnameError extends Error {
+class StaleOpnameError extends ApiError {
   constructor() {
     super(
       'Stok sistem sudah berubah sejak opname dibuat. ' +
-      'Opname harus dibuat ulang sebelum rekonsiliasi.'
+      'Opname harus dibuat ulang sebelum rekonsiliasi.',
+      409,
+      'STALE_OPNAME'
     )
     this.name = 'StaleOpnameError'
   }
@@ -53,12 +56,7 @@ export async function POST(
 
     if (!validation.success) {
       return NextResponse.json(
-        {
-          message: 'Validation error',
-          errors:
-            validation.error.flatten()
-              .fieldErrors,
-        },
+        { message: 'Validasi gagal', errors: validation.error.errors },
         { status: 400 }
       )
     }
@@ -212,41 +210,11 @@ export async function POST(
       }
     )
 
-    return NextResponse.json({
-      message:
-        'Opname berhasil direkonsiliasi',
-      data: result,
-    })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          message: 'Validation error',
-          errors:
-            error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      )
-    }
-
-    if (error instanceof StaleOpnameError) {
-      return NextResponse.json(
-        {
-          message: error.message,
-          code: 'STALE_OPNAME',
-        },
-        { status: 409 }
-      )
-    }
-
-    console.error(
-      'POST /api/opname/[id]/reconcile error:',
-      error
-    )
-
     return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
+      successResponse(result, undefined),
+      { status: 200 }
     )
+  } catch (error) {
+    return handleApiError(error)
   }
 }

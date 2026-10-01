@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { handleApiError, successResponse } from '@/lib/api-response'
 
 const updateOpnameSchema = z.object({
   physicalStock: z.coerce.number().int().nonnegative('Stok fisik tidak boleh negatif').optional(),
@@ -47,10 +48,9 @@ export async function GET(
       return NextResponse.json({ message: 'Opname tidak ditemukan' }, { status: 404 })
     }
 
-    return NextResponse.json(opname)
+    return NextResponse.json(successResponse(opname))
   } catch (error) {
-    console.error('GET /api/opname/[id] error:', error)
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -75,7 +75,7 @@ export async function PUT(
 
     if (!validation.success) {
       return NextResponse.json(
-        { message: 'Validation error', errors: validation.error.flatten().fieldErrors },
+        { message: 'Validasi gagal', errors: validation.error.errors },
         { status: 400 }
       )
     }
@@ -141,10 +141,9 @@ export async function PUT(
       return updated
     })
 
-    return NextResponse.json(updatedOpname)
+    return NextResponse.json(successResponse(updatedOpname))
   } catch (error) {
-    console.error('PUT /api/opname/[id] error:', error)
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -201,7 +200,6 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Opname dibatalkan' })
   } catch (error) {
-    console.error('DELETE /api/opname/[id] error:', error)
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }

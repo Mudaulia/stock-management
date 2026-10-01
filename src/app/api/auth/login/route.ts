@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, setSession } from '@/lib/auth'
+import { handleApiError, successResponse } from '@/lib/api-response'
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,20 +49,18 @@ export async function POST(request: NextRequest) {
       username: user.username,
     })
 
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        fullName: user.fullName,
-        role: user.role,
-      },
-    })
-  } catch (error) {
-    console.error('Login error:', error)
     return NextResponse.json(
-      { message: 'Terjadi kesalahan server' },
-      { status: 500 }
+      successResponse({
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          fullName: user.fullName,
+          role: user.role,
+        },
+      })
     )
+  } catch (error) {
+    return handleApiError(error)
   }
 }

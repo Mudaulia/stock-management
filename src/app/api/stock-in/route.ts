@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
+import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
 
 const stockInCreateSchema = z.object({
   itemId: z.string().cuid('ID barang tidak valid'),
@@ -54,21 +55,16 @@ export async function GET(request: NextRequest) {
       prisma.stockTransaction.count({ where }),
     ])
 
-    return NextResponse.json({
-      data: transactions,
-      pagination: {
+    return NextResponse.json(
+      paginatedResponse(transactions, {
         page: query.page,
         limit: query.limit,
         total,
         totalPages: Math.ceil(total / query.limit),
-      },
-    })
+      })
+    )
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: 'Parameter tidak valid', errors: error.errors }, { status: 400 })
-    }
-    console.error('Get stock in error:', error)
-    return NextResponse.json({ message: 'Terjadi kesalahan server' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -126,12 +122,8 @@ export async function POST(request: NextRequest) {
       return transaction
     })
 
-    return NextResponse.json(result, { status: 201 })
+    return NextResponse.json(successResponse(result), { status: 201 })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: 'Validasi gagal', errors: error.errors }, { status: 400 })
-    }
-    console.error('Create stock in error:', error)
-    return NextResponse.json({ message: 'Terjadi kesalahan server' }, { status: 500 })
+    return handleApiError(error)
   }
 }

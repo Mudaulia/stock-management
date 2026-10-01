@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
+import { handleApiError, paginatedResponse, successResponse, ApiError } from '@/lib/api-response'
 
 const stockOutCreateSchema = z.object({
   itemId: z.string().cuid('ID barang tidak valid'),
@@ -25,9 +26,9 @@ const stockOutQuerySchema = z.object({
     .default('desc'),
 })
 
-class StockUnavailableError extends Error {
+class StockUnavailableError extends ApiError {
   constructor() {
-    super('Stok tidak mencukupi atau barang sudah tidak aktif.')
+    super('Stok tidak mencukupi atau barang sudah tidak aktif.', 409, 'STOCK_UNAVAILABLE')
     this.name = 'StockUnavailableError'
   }
 }
@@ -106,32 +107,16 @@ export async function GET(request: NextRequest) {
       prisma.stockTransaction.count({ where }),
     ])
 
-    return NextResponse.json({
-      data: transactions,
-      pagination: {
+    return NextResponse.json(
+      paginatedResponse(transactions, {
         page: query.page,
         limit: query.limit,
         total,
         totalPages: Math.ceil(total / query.limit),
-      },
-    })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          message: 'Parameter tidak valid',
-          errors: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
-    console.error('Get stock out error:', error)
-
-    return NextResponse.json(
-      { message: 'Terjadi kesalahan server' },
-      { status: 500 }
+      })
     )
+  } catch (error) {
+    return handleApiError(error)
   }
 }
 
@@ -268,35 +253,10 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    return NextResponse.json(result, {
+    return NextResponse.json(successResponse(result), {
       status: 201,
     })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          message: 'Validasi gagal',
-          errors: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
-    if (error instanceof StockUnavailableError) {
-      return NextResponse.json(
-        {
-          message:
-            'Stok berubah atau tidak mencukupi. Silakan refresh stok dan coba lagi.',
-        },
-        { status: 409 }
-      )
-    }
-
-    console.error('Create stock out error:', error)
-
-    return NextResponse.json(
-      { message: 'Terjadi kesalahan server' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

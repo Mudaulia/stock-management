@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
+import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
 
 const itemCreateSchema = z.object({
   code: z.string().min(1, 'Kode barang wajib diisi').max(50),
@@ -118,34 +119,16 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
-    return NextResponse.json({
-      data: items,
-      pagination: {
+    return NextResponse.json(
+      paginatedResponse(items, {
         page: query.page,
         limit: query.limit,
         total,
-        totalPages: Math.ceil(
-          total / query.limit
-        ),
-      },
-    })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          message: 'Parameter tidak valid',
-          errors: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
-    console.error('Get items error:', error)
-
-    return NextResponse.json(
-      { message: 'Terjadi kesalahan server' },
-      { status: 500 }
+        totalPages: Math.ceil(total / query.limit),
+      })
     )
+  } catch (error) {
+    return handleApiError(error)
   }
 }
 
@@ -228,25 +211,10 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    return NextResponse.json(item, {
+    return NextResponse.json(successResponse(item), {
       status: 201,
     })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          message: 'Validasi gagal',
-          errors: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
-    console.error('Create item error:', error)
-
-    return NextResponse.json(
-      { message: 'Terjadi kesalahan server' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

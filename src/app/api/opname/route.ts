@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
 
 const opnameSchema = z.object({
   itemId: z.string().min(1, 'Barang wajib dipilih'),
@@ -72,18 +73,16 @@ export async function GET(request: NextRequest) {
       prisma.stockOpname.count({ where }),
     ])
 
-    return NextResponse.json({
-      data: opnames,
-      pagination: {
+    return NextResponse.json(
+      paginatedResponse(opnames, {
         page,
         limit,
         total,
         totalPages: Math.ceil(total / limit),
-      },
-    })
+      })
+    )
   } catch (error) {
-    console.error('GET /api/opname error:', error)
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }
 
@@ -104,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     if (!validation.success) {
       return NextResponse.json(
-        { message: 'Validation error', errors: validation.error.flatten().fieldErrors },
+        { message: 'Validasi gagal', errors: validation.error.errors },
         { status: 400 }
       )
     }
@@ -186,9 +185,8 @@ export async function POST(request: NextRequest) {
       return newOpname
     })
 
-    return NextResponse.json(opname, { status: 201 })
+    return NextResponse.json(successResponse(opname), { status: 201 })
   } catch (error) {
-    console.error('POST /api/opname error:', error)
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }

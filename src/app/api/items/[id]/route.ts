@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
+import { handleApiError, successResponse } from '@/lib/api-response'
 
 const itemUpdateSchema = z.object({
   code: z.string().min(1).max(50).optional(),
@@ -59,14 +60,9 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(item)
+    return NextResponse.json(successResponse(item))
   } catch (error) {
-    console.error('Get item error:', error)
-
-    return NextResponse.json(
-      { message: 'Terjadi kesalahan server' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -168,24 +164,9 @@ export async function PUT(
       }
     )
 
-    return NextResponse.json(item)
+    return NextResponse.json(successResponse(item))
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          message: 'Validasi gagal',
-          errors: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
-    console.error('Update item error:', error)
-
-    return NextResponse.json(
-      { message: 'Terjadi kesalahan server' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -251,16 +232,10 @@ export async function DELETE(
       }
     )
 
-    return NextResponse.json({
-      message: 'Barang berhasil dihapus',
-      data: item,
-    })
-  } catch (error) {
-    console.error('Delete item error:', error)
-
     return NextResponse.json(
-      { message: 'Terjadi kesalahan server' },
-      { status: 500 }
+      successResponse(item, 'Barang berhasil dihapus')
     )
+  } catch (error) {
+    return handleApiError(error)
   }
 }

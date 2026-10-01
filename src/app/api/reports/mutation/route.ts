@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,18 +87,15 @@ export async function GET(request: NextRequest) {
       return acc
     }, {} as Record<string, { totalQuantity: number; transactionCount: number }>)
 
-    return NextResponse.json({
-      data: transactions,
-      pagination: {
+    return NextResponse.json(
+      paginatedResponse(transactions, {
         page,
         limit,
         total,
         totalPages: Math.ceil(total / limit),
-      },
-      summary: summaryByType,
-    })
+      }, summaryByType)
+    )
   } catch (error) {
-    console.error('GET /api/reports/mutation error:', error)
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }

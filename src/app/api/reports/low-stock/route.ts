@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { handleApiError, paginatedResponse } from '@/lib/api-response'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,22 +69,22 @@ export async function GET(request: NextRequest) {
       stockPercentage: item.minStock > 0 ? Math.round((item.currentStock / item.minStock) * 100) : 0,
     }))
 
-    return NextResponse.json({
-      data: itemsWithStatus,
-      pagination: {
+    // Calculate summary
+    const summary = {
+      totalLowStock: itemsWithStatus.filter(i => i.stockStatus === 'LOW_STOCK').length,
+      totalOutOfStock: itemsWithStatus.filter(i => i.stockStatus === 'OUT_OF_STOCK').length,
+      totalItems: total,
+    }
+
+    return NextResponse.json(
+      paginatedResponse(itemsWithStatus, {
         page,
         limit,
         total,
         totalPages: Math.ceil(total / limit),
-      },
-      summary: {
-        totalLowStock: itemsWithStatus.filter(i => i.stockStatus === 'LOW_STOCK').length,
-        totalOutOfStock: itemsWithStatus.filter(i => i.stockStatus === 'OUT_OF_STOCK').length,
-        totalItems: itemsWithStatus.length,
-      },
-    })
+      }, summary)
+    )
   } catch (error) {
-    console.error('GET /api/reports/low-stock error:', error)
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    return handleApiError(error)
   }
 }

@@ -26,6 +26,8 @@ import { cn } from '@/lib/utils'
 import { useToast, Toaster } from '@/components/ui/toaster'
 import { format } from 'date-fns'
 import { bem } from '@/lib/bem'
+import { fetchSummary } from '@/lib/fetch-utils'
+import { itemWithStockStatusSchema, stockReportSummarySchema } from '@/lib/schemas'
 
 interface StockItem {
   id: string
@@ -92,16 +94,18 @@ export default function StockReportPage() {
         params.append('search', debouncedSearch)
       }
 
-      const response = await fetch(`/api/reports/stock?${params.toString()}`)
-      const result = await response.json()
+      const result = await fetchSummary<StockItem>(
+        `/api/reports/stock?${params.toString()}`,
+        itemWithStockStatusSchema
+      )
 
-      if (!response.ok) {
+      if (!result.ok) {
         throw new Error(result.message || 'Gagal memuat data')
       }
 
       setItems(result.data)
       setPagination(prev => ({ ...prev, ...result.pagination }))
-      setSummary(result.summary)
+      setSummary(result.summary as { totalItems: number; lowStockCount: number; outOfStockCount: number; normalCount: number })
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Terjadi kesalahan')
     } finally {
