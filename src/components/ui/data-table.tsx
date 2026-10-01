@@ -5,11 +5,11 @@ import { cn } from "@/lib/utils"
 import {
   ColumnDef,
   flexRender,
-  createCoreRowModel,
-  createPaginatedRowModel,
-  createSortedRowModel,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
   SortingState,
-  useTable,
+  useReactTable,
   VisibilityState,
 } from "@tanstack/react-table"
 import {
@@ -58,15 +58,15 @@ export function DataTable<TData, TValue>({
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
 
-  const table = useTable({
+  const table = useReactTable({
     data,
     columns,
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     onColumnVisibilityChange: setColumnVisibility,
-    getCoreRowModel: createCoreRowModel(),
-    getPaginationRowModel: createPaginatedRowModel(),
-    getSortedRowModel: createSortedRowModel(),
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     enableSorting,
     initialState: {
       pagination: {
@@ -97,7 +97,7 @@ export function DataTable<TData, TValue>({
                     <TableHead key={header.id} />
                   ) : (
                     <TableHead key={header.id}>
-                      {header.isSortable ? (
+                      {header.column.getCanSort() ? (
                         flexRender(
                           header.column.columnDef.header,
                           header.getContext()
