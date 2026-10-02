@@ -122,8 +122,15 @@ export async function fetchWithZod<T>(
   init?: RequestInit
 ): Promise<FetchResult<T>> {
   try {
-    const response = await fetch(input, init)
+    const fetchInit = {
+      ...init,
+      credentials: 'include' as RequestCredentials,
+    }
+    console.log('fetchWithZod: fetching', input, fetchInit)
+    const response = await fetch(input, fetchInit)
+    console.log('fetchWithZod: response status', response.status)
     const body = await response.json()
+    console.log('fetchWithZod: response body', body)
 
     if (!response.ok) {
       // Try to parse as standardized error response

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -37,6 +37,8 @@ import { cn } from '@/lib/utils'
 import { useToast, Toaster } from '@/components/ui/toaster'
 import { format } from 'date-fns'
 import { bem, bemVariant } from '@/lib/bem'
+import { fetchPaginated, fetchWithZod } from '@/lib/fetch-utils'
+import { stockTransactionSchema, itemSchema } from '@/lib/schemas'
 
 const stockOutSchema = z.object({
   itemId: z.string().min(1, 'Barang wajib dipilih'),
@@ -48,46 +50,8 @@ const stockOutSchema = z.object({
 
 type StockOutForm = z.infer<typeof stockOutSchema>
 
-interface StockTransaction {
-  id: string
-  itemId: string
-  type: string
-  quantity: number
-  reference: string | null
-  notes: string | null
-  transactionDate: string
-  createdAt: string
-  item: {
-    id: string
-    code: string
-    name: string
-    unit: string
-    currentStock: number
-  }
-  createdBy: {
-    id: string
-    username: string
-    fullName: string
-  }
-}
-
-interface Item {
-  id: string
-  code: string
-  name: string
-  unit: string
-  currentStock: number
-}
-
-interface PaginatedResponse<T> {
-  data: T[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-}
+type StockTransaction = z.infer<typeof stockTransactionSchema>
+type Item = z.infer<typeof itemSchema>
 
 export default function StockOutPage() {
   const { showSuccess, showError } = useToast()
@@ -120,7 +84,7 @@ export default function StockOutPage() {
     },
   })
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -130,44 +94,63 @@ export default function StockOutPage() {
         ...(startDate && { startDate }),
         ...(endDate && { endDate }),
       })
-      const res = await fetch(`/api/stock-out?${params}`)
-      if (!res.ok) throw new Error('Gagal memuat data')
-      const json: PaginatedResponse<StockTransaction> = await res.json()
-      setTransactions(json.data)
-      setPagination(json.pagination)
+      const result = await fetchPaginated<StockTransaction>(
+        `/api/stock-out?${params.toString()}`,
+        stockTransactionSchema
+      )
+
+      if (!result.ok) {
+        throw new Error(result.message || 'Gagal memuat data')
+      }
+
+      setTransactions(result.data)
+      setPagination(prev => ({ ...prev, ...result.pagination }))
     } catch (err) {
-      showError('Error', 'Gagal memuat data stok keluar')
+      showError('Error', err instanceof Error ? err.message : 'Gagal memuat data stok keluar')
     } finally {
       setIsLoading(false)
     }
-  }
+}, [pagination.page, pagination.limit, search, startDate, endDate, showError]);
 
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     try {
-      const res = await fetch('/api/items?isActive=true&limit=1000')
-      if (!res.ok) throw new Error('Gagal memuat barang')
-      const json = await res.json()
-      setItems(json.data)
+      const result = await fetchPaginated<Item>(
+        '/api/items?isActive=true&limit=1000',
+        itemSchema
+      )
+
+      if (!result.ok) {
+        throw new Error(result.message || 'Gagal memuat barang')
+      }
+
+      setItems(result.data)
     } catch (err) {
       console.error('Fetch items error:', err)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchTransactions()
     fetchItems()
-  }, [])
+  }, [fetchTransactions, fetchItems])
 
   const onSubmit = async (data: StockOutForm) => {
     setIsSubmitting(true)
     try {
-      const res = await fetch('/api/stock-out', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.message || 'Gagal menyimpan')
+      const result = await fetchWithZod<StockTransaction>(
+        '/api/stock-out',
+        stockTransactionSchema,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }
+      )
+
+      if (!result.ok) {
+        throw new Error(result.message || 'Gagal menyimpan')
+      }
+
       showSuccess('Berhasil', 'Stok keluar berhasil dicatat')
       setIsDialogOpen(false)
       reset({ quantity: 1, reference: '', notes: '', transactionDate: format(new Date(), 'yyyy-MM-dd') })

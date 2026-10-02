@@ -4,6 +4,8 @@ import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
 
+export const dynamic = 'force-dynamic'
+
 const itemCreateSchema = z.object({
   code: z.string().min(1, 'Kode barang wajib diisi').max(50),
   name: z.string().min(1, 'Nama barang wajib diisi').max(255),

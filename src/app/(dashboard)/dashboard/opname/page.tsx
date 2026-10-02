@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -47,56 +47,20 @@ import { cn } from '@/lib/utils'
 import { useToast, Toaster } from '@/components/ui/toaster'
 import { format } from 'date-fns'
 import { bem, bemVariant } from '@/lib/bem'
+import { fetchPaginated, fetchWithZod } from '@/lib/fetch-utils'
+import { stockOpnameSchema, itemSchema } from '@/lib/schemas'
 
-const opnameSchema = z.object({
+const opnameFormSchema = z.object({
   itemId: z.string().min(1, 'Barang wajib dipilih'),
   physicalStock: z.coerce.number().int().nonnegative('Stok fisik tidak boleh negatif'),
   notes: z.string().optional(),
   opnameDate: z.string().min(1, 'Tanggal wajib diisi'),
 })
 
-const CANCELLED = 'CANCELLED'
+type OpnameForm = z.infer<typeof opnameFormSchema>
 
-type OpnameForm = z.infer<typeof opnameSchema>
-
-interface StockOpname {
-  id: string
-  itemId: string
-  systemStock: number
-  physicalStock: number
-  difference: number
-  notes: string | null
-  status: 'PENDING' | 'RECONCILED' | 'CANCELLED'
-  opnameDate: string
-  createdAt: string
-  item: {
-    id: string
-    code: string
-    name: string
-    unit: string
-    currentStock: number
-  }
-  createdBy: {
-    id: string
-    username: string
-    fullName: string
-  }
-  reconciliation?: {
-    id: string
-    adjustedAt: string
-    adjustedBy: {
-      fullName: string
-    }
-  } | null
-}
-
-interface Item {
-  id: string
-  code: string
-  name: string
-  unit: string
-  currentStock: number
-}
+type StockOpname = z.infer<typeof stockOpnameSchema>
+type Item = z.infer<typeof itemSchema>
 
 interface PaginatedResponse<T> {
   data: T[]
@@ -133,7 +97,7 @@ export default function OpnamePage() {
     setValue,
     watch,
   } = useForm<OpnameForm>({
-    resolver: zodResolver(opnameSchema),
+    resolver: zodResolver(opnameFormSchema),
     defaultValues: {
       itemId: '',
       physicalStock: 0,
@@ -142,7 +106,7 @@ export default function OpnamePage() {
     },
   })
 
-  const fetchOpnames = async () => {
+  const fetchOpnames = useCallback(async () => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -153,44 +117,63 @@ export default function OpnamePage() {
         ...(startDate && { startDate }),
         ...(endDate && { endDate }),
       })
-      const res = await fetch(`/api/opname?${params}`)
-      if (!res.ok) throw new Error('Gagal memuat data')
-      const json: PaginatedResponse<StockOpname> = await res.json()
-      setOpnames(json.data)
-      setPagination(json.pagination)
+      const result = await fetchPaginated<StockOpname>(
+        `/api/opname?${params.toString()}`,
+        stockOpnameSchema
+      )
+
+      if (!result.ok) {
+        throw new Error(result.message || 'Gagal memuat data')
+      }
+
+      setOpnames(result.data)
+      setPagination(prev => ({ ...prev, ...result.pagination }))
     } catch (err) {
-      showError('Error', 'Gagal memuat data opname')
+      showError('Error', err instanceof Error ? err.message : 'Gagal memuat data opname')
     } finally {
       setIsLoading(false)
     }
-  }
+}, [pagination.page, pagination.limit, search, statusFilter, startDate, endDate, showError]);
 
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     try {
-      const res = await fetch('/api/items?isActive=true&limit=1000')
-      if (!res.ok) throw new Error('Gagal memuat barang')
-      const json = await res.json()
-      setItems(json.data)
+      const result = await fetchPaginated<Item>(
+        '/api/items?isActive=true&limit=1000',
+        itemSchema
+      )
+
+      if (!result.ok) {
+        throw new Error(result.message || 'Gagal memuat barang')
+      }
+
+      setItems(result.data)
     } catch (err) {
       console.error('Fetch items error:', err)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchOpnames()
     fetchItems()
-  }, [])
+  }, [fetchOpnames, fetchItems])
 
   const onSubmit = async (data: OpnameForm) => {
     setIsSubmitting(true)
     try {
-      const res = await fetch('/api/opname', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.message || 'Gagal menyimpan')
+      const result = await fetchWithZod<StockOpname>(
+        '/api/opname',
+        stockOpnameSchema,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }
+      )
+
+      if (!result.ok) {
+        throw new Error(result.message || 'Gagal menyimpan')
+      }
+
       showSuccess('Berhasil', 'Opname berhasil dibuat')
       setIsDialogOpen(false)
       reset({ physicalStock: 0, notes: '', opnameDate: format(new Date(), 'yyyy-MM-dd') })
@@ -206,13 +189,25 @@ export default function OpnamePage() {
     if (!selectedOpname) return
     setIsReconciling(true)
     try {
-      const res = await fetch(`/api/opname/${selectedOpname.id}/reconcile`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.message || 'Gagal merekonsiliasi')
+      const result = await fetchWithZod<{ updatedOpname: StockOpname; reconciliation: unknown }>(
+        `/api/opname/${selectedOpname.id}/reconcile`,
+        z.object({
+          data: z.object({
+            updatedOpname: stockOpnameSchema,
+            reconciliation: z.unknown(),
+          }),
+        }),
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        }
+      )
+
+      if (!result.ok) {
+        throw new Error(result.message || 'Gagal merekonsiliasi')
+      }
+
       showSuccess('Berhasil', 'Opname berhasil direkonsiliasi')
       setShowReconcileDialog(false)
       setSelectedOpname(null)
@@ -229,11 +224,18 @@ export default function OpnamePage() {
     if (!selectedOpname) return
     setIsReconciling(true)
     try {
-      const res = await fetch(`/api/opname/${selectedOpname.id}`, {
-        method: 'DELETE',
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.message || 'Gagal membatalkan')
+      const result = await fetchWithZod<{ message: string }>(
+        `/api/opname/${selectedOpname.id}`,
+        z.object({ message: z.string() }),
+        {
+          method: 'DELETE',
+        }
+      )
+
+      if (!result.ok) {
+        throw new Error(result.message || 'Gagal membatalkan')
+      }
+
       showSuccess('Berhasil', 'Opname dibatalkan')
       setShowCancelDialog(false)
       setSelectedOpname(null)

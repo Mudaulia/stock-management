@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
-import { handleApiError, paginatedResponse, successResponse, ApiError } from '@/lib/api-response'
+import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
+
+export const dynamic = 'force-dynamic'
 
 const stockOutCreateSchema = z.object({
   itemId: z.string().cuid('ID barang tidak valid'),
@@ -26,9 +28,9 @@ const stockOutQuerySchema = z.object({
     .default('desc'),
 })
 
-class StockUnavailableError extends ApiError {
+class StockUnavailableError extends Error {
   constructor() {
-    super('Stok tidak mencukupi atau barang sudah tidak aktif.', 409, 'STOCK_UNAVAILABLE')
+    super('Stok tidak mencukupi atau barang sudah tidak aktif.')
     this.name = 'StockUnavailableError'
   }
 }

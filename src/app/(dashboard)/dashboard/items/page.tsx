@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -55,43 +55,12 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast, Toaster } from "@/components/ui/toaster";
 import { bem, bemVariant } from "@/lib/bem";
-
-const itemSchema = z.object({
-  code: z.string().min(1, "Kode barang wajib diisi").max(50),
-  name: z.string().min(1, "Nama barang wajib diisi").max(255),
-  unit: z.string().min(1, "Satuan wajib diisi").max(50),
-  minStock: z.coerce.number().int().min(0, "Stok minimum tidak boleh negatif"),
-  currentStock: z.coerce
-    .number()
-    .int()
-    .min(0, "Stok saat ini tidak boleh negatif"),
-  description: z.string().optional(),
-});
+import { fetchPaginated, fetchWithZod } from "@/lib/fetch-utils";
+import { itemSchema } from "@/lib/schemas";
 
 type ItemForm = z.infer<typeof itemSchema>;
 
-interface Item {
-  id: string;
-  code: string;
-  name: string;
-  unit: string;
-  minStock: number;
-  currentStock: number;
-  description: string | null;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
+type Item = z.infer<typeof itemSchema>;
 
 const UNITS = ["PCS", "SET", "LITER", "UNIT", "METER", "KG", "BOX", "PACK"];
 
@@ -137,7 +106,7 @@ export default function ItemsPage() {
 
   const watchedUnit = watch("unit");
 
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
@@ -148,21 +117,27 @@ export default function ItemsPage() {
           isActive: isActiveFilter.toString(),
         }),
       });
-      const res = await fetch(`/api/items?${params}`);
-      if (!res.ok) throw new Error("Gagal memuat data");
-      const json: PaginatedResponse<Item> = await res.json();
-      setItems(json.data);
-      setPagination(json.pagination);
+      const result = await fetchPaginated<Item>(
+        `/api/items?${params.toString()}`,
+        itemSchema
+      );
+
+      if (!result.ok) {
+        throw new Error(result.message || 'Gagal memuat data');
+      }
+
+      setItems(result.data);
+      setPagination(prev => ({ ...prev, ...result.pagination }));
     } catch (err) {
-      showError("Error", "Gagal memuat data barang");
+      showError("Error", err instanceof Error ? err.message : "Gagal memuat data barang");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [pagination.page, pagination.limit, search, isActiveFilter, showError]);
 
   useEffect(() => {
     fetchItems();
-  }, []);
+  }, [fetchItems]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,13 +176,20 @@ export default function ItemsPage() {
     try {
       const url = editingItem ? `/api/items/${editingItem.id}` : "/api/items";
       const method = editingItem ? "PUT" : "POST";
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Gagal menyimpan");
+      const result = await fetchWithZod<Item>(
+        url,
+        itemSchema,
+        {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        }
+      );
+
+      if (!result.ok) {
+        throw new Error(result.message || "Gagal menyimpan");
+      }
+
       showSuccess(editingItem ? "Berhasil diupdate" : "Berhasil ditambahkan");
       setIsDialogOpen(false);
       fetchItems();
@@ -223,9 +205,16 @@ export default function ItemsPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`/api/items/${id}`, { method: "DELETE" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Gagal menghapus");
+      const result = await fetchWithZod<{ message: string }>(
+        `/api/items/${id}`,
+        z.object({ message: z.string() }),
+        { method: "DELETE" }
+      );
+
+      if (!result.ok) {
+        throw new Error(result.message || "Gagal menghapus");
+      }
+
       showSuccess("Berhasil dihapus");
       setDeleteConfirm(null);
       fetchItems();

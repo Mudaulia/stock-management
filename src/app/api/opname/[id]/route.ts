@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { handleApiError, successResponse } from '@/lib/api-response'
+
+export const dynamic = 'force-dynamic'
 
 const updateOpnameSchema = z.object({
   physicalStock: z.coerce.number().int().nonnegative('Stok fisik tidak boleh negatif').optional(),
@@ -18,8 +20,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession()
-    if (!session) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
@@ -59,13 +61,13 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession()
-    if (!session) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
     // Role check: Only ADMIN and WAREHOUSE_STAFF can update opname
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'WAREHOUSE_STAFF') {
+    if (user.role !== 'ADMIN' && user.role !== 'WAREHOUSE_STAFF') {
       return NextResponse.json({ message: 'Forbidden: Insufficient permissions' }, { status: 403 })
     }
 
@@ -121,7 +123,7 @@ export async function PUT(
       // Audit log
       await tx.auditLog.create({
         data: {
-          userId: session.user.id,
+          userId: user.id,
           action: 'UPDATE',
           entity: 'StockOpname',
           entityId: id,
@@ -152,13 +154,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession()
-    if (!session) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
     // Role check: Only ADMIN and WAREHOUSE_STAFF can cancel opname
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'WAREHOUSE_STAFF') {
+    if (user.role !== 'ADMIN' && user.role !== 'WAREHOUSE_STAFF') {
       return NextResponse.json({ message: 'Forbidden: Insufficient permissions' }, { status: 403 })
     }
 
@@ -188,7 +190,7 @@ export async function DELETE(
       // Audit log
       await tx.auditLog.create({
         data: {
-          userId: session.user.id,
+          userId: user.id,
           action: 'CANCEL',
           entity: 'StockOpname',
           entityId: id,

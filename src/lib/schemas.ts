@@ -57,6 +57,7 @@ export const transactionItemSchema = z.object({
   code: z.string(),
   name: z.string(),
   unit: z.string(),
+  currentStock: z.number().int().optional(),
 })
 
 export const transactionUserSchema = z.object({

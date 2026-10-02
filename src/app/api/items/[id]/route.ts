@@ -4,6 +4,8 @@ import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 import { handleApiError, successResponse } from '@/lib/api-response'
 
+export const dynamic = 'force-dynamic'
+
 const itemUpdateSchema = z.object({
   code: z.string().min(1).max(50).optional(),
   name: z.string().min(1).max(255).optional(),

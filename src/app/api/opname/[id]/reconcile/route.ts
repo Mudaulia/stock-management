@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { handleApiError, successResponse, ApiError } from '@/lib/api-response'
+import { handleApiError, successResponse } from '@/lib/api-response'
+
+export const dynamic = 'force-dynamic'
 
 const reconcileSchema = z.object({
   notes: z.string().optional(),
 })
 
-class StaleOpnameError extends ApiError {
+class StaleOpnameError extends Error {
   constructor() {
     super(
       'Stok sistem sudah berubah sejak opname dibuat. ' +
-      'Opname harus dibuat ulang sebelum rekonsiliasi.',
-      409,
-      'STALE_OPNAME'
+      'Opname harus dibuat ulang sebelum rekonsiliasi.'
     )
     this.name = 'StaleOpnameError'
   }
@@ -29,16 +29,16 @@ export async function POST(
   }
 ) {
   try {
-    const session = await getServerSession()
+    const user = await getCurrentUser()
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    if (session.user.role !== 'ADMIN') {
+    if (user.role !== 'ADMIN') {
       return NextResponse.json(
         {
           message:
@@ -138,7 +138,7 @@ export async function POST(
           await tx.stockReconciliation.create({
             data: {
               opnameId: id,
-              adjustedById: session.user.id,
+              adjustedById: user.id,
               notes,
             },
           })
@@ -167,14 +167,14 @@ export async function POST(
                   notes || 'Tanpa catatan'
                 }`,
               transactionDate: new Date(),
-              createdById: session.user.id,
+              createdById: user.id,
             },
           })
         }
 
         await tx.auditLog.create({
           data: {
-            userId: session.user.id,
+            userId: user.id,
             action: 'ADJUST',
             entity: 'Item',
             entityId: opname.itemId,
@@ -189,7 +189,7 @@ export async function POST(
 
         await tx.auditLog.create({
           data: {
-            userId: session.user.id,
+            userId: user.id,
             action: 'RECONCILE',
             entity: 'StockOpname',
             entityId: id,

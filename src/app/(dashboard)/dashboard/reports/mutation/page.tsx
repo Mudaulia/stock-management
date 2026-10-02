@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,39 +27,10 @@ import { cn } from '@/lib/utils'
 import { useToast, Toaster } from '@/components/ui/toaster'
 import { format } from 'date-fns'
 import { bem } from '@/lib/bem'
+import { fetchPaginated } from '@/lib/fetch-utils'
+import { stockTransactionSchema } from '@/lib/schemas'
 
-interface MutationTransaction {
-  id: string
-  itemId: string
-  type: 'STOCK_IN' | 'STOCK_OUT' | 'ADJUSTMENT'
-  quantity: number
-  reference: string | null
-  notes: string | null
-  transactionDate: string
-  createdAt: string
-  item: {
-    id: string
-    code: string
-    name: string
-    unit: string
-  }
-  createdBy: {
-    id: string
-    username: string
-    fullName: string
-  }
-}
-
-interface PaginatedResponse<T> {
-  data: T[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-  summary: Record<string, { totalQuantity: number; transactionCount: number }>
-}
+type MutationTransaction = z.infer<typeof stockTransactionSchema>
 
 export default function MutationReportPage() {
   const { showSuccess, showError } = useToast()
@@ -83,7 +55,7 @@ export default function MutationReportPage() {
     return () => clearTimeout(timer)
   }, [search])
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -98,26 +70,34 @@ export default function MutationReportPage() {
         params.append('search', debouncedSearch)
       }
 
-      const response = await fetch(`/api/reports/mutation?${params.toString()}`)
-      const result = await response.json()
+      const url = `/api/reports/mutation?${params.toString()}`
+      console.log('Fetching:', url)
+      const result = await fetchPaginated<MutationTransaction>(
+        url,
+        stockTransactionSchema
+      )
+      console.log('Result:', result)
 
-      if (!response.ok) {
+      if (!result.ok) {
+        console.error('API Error:', result.message, result.errors)
         throw new Error(result.message || 'Gagal memuat data')
       }
 
+      console.log('Setting data:', result.data)
       setTransactions(result.data)
       setPagination(prev => ({ ...prev, ...result.pagination }))
-      setSummary(result.summary)
+      setSummary(result.summary as Record<string, { totalQuantity: number; transactionCount: number }>)
     } catch (err) {
+      console.error('Fetch error:', err)
       showError(err instanceof Error ? err.message : 'Terjadi kesalahan')
     } finally {
       setIsLoading(false)
     }
-  }
+}, [pagination.page, pagination.limit, typeFilter, startDate, endDate, itemId, debouncedSearch, showError]);
 
   useEffect(() => {
     fetchTransactions()
-  }, [pagination.page, typeFilter, startDate, endDate, itemId, debouncedSearch])
+  }, [fetchTransactions])
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }))

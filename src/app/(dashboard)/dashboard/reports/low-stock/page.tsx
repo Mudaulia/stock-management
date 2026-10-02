@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,37 +27,10 @@ import { cn } from '@/lib/utils'
 import { useToast, Toaster } from '@/components/ui/toaster'
 import { format } from 'date-fns'
 import { bem } from '@/lib/bem'
+import { fetchPaginated } from '@/lib/fetch-utils'
+import { itemWithShortageSchema } from '@/lib/schemas'
 
-interface LowStockItem {
-  id: string
-  code: string
-  name: string
-  unit: string
-  currentStock: number
-  minStock: number
-  description: string | null
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
-  stockStatus: 'LOW_STOCK' | 'OUT_OF_STOCK'
-  shortage: number
-  stockPercentage: number
-}
-
-interface PaginatedResponse<T> {
-  data: T[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-  summary: {
-    totalLowStock: number
-    totalOutOfStock: number
-    totalItems: number
-  }
-}
+type LowStockItem = z.infer<typeof itemWithShortageSchema>
 
 export default function LowStockReportPage() {
   const { showSuccess, showError } = useToast()
@@ -78,7 +52,7 @@ export default function LowStockReportPage() {
     return () => clearTimeout(timer)
   }, [search])
 
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -90,26 +64,28 @@ export default function LowStockReportPage() {
         params.append('search', debouncedSearch)
       }
 
-      const response = await fetch(`/api/reports/low-stock?${params.toString()}`)
-      const result = await response.json()
+      const result = await fetchPaginated<LowStockItem>(
+        `/api/reports/low-stock?${params.toString()}`,
+        itemWithShortageSchema
+      )
 
-      if (!response.ok) {
+      if (!result.ok) {
         throw new Error(result.message || 'Gagal memuat data')
       }
 
       setItems(result.data)
       setPagination(prev => ({ ...prev, ...result.pagination }))
-      setSummary(result.summary)
+      setSummary(result.summary as { totalLowStock: number; totalOutOfStock: number; totalItems: number })
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Terjadi kesalahan')
     } finally {
       setIsLoading(false)
     }
-  }
+}, [pagination.page, pagination.limit, includeZeroStock, debouncedSearch, showError]);
 
   useEffect(() => {
     fetchItems()
-  }, [pagination.page, includeZeroStock, debouncedSearch])
+  }, [fetchItems])
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }))

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
+
+export const dynamic = 'force-dynamic'
 
 const opnameSchema = z.object({
   itemId: z.string().min(1, 'Barang wajib dipilih'),
@@ -17,8 +19,8 @@ const reconcileSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession()
-    if (!session) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
@@ -88,13 +90,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession()
-    if (!session) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
     // Role check: Only ADMIN and WAREHOUSE_STAFF can create opname
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'WAREHOUSE_STAFF') {
+    if (user.role !== 'ADMIN' && user.role !== 'WAREHOUSE_STAFF') {
       return NextResponse.json({ message: 'Forbidden: Insufficient permissions' }, { status: 403 })
     }
 
@@ -150,7 +152,7 @@ export async function POST(request: NextRequest) {
           difference,
           notes,
           opnameDate: new Date(opnameDate),
-          createdById: session.user.id,
+          createdById: user.id,
           status: 'PENDING',
         },
         include: {
@@ -166,7 +168,7 @@ export async function POST(request: NextRequest) {
       // Audit log
       await tx.auditLog.create({
         data: {
-          userId: session.user.id,
+          userId: user.id,
           action: 'CREATE',
           entity: 'StockOpname',
           entityId: newOpname.id,

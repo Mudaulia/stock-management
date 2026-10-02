@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,39 +27,11 @@ import { cn } from '@/lib/utils'
 import { useToast, Toaster } from '@/components/ui/toaster'
 import { format } from 'date-fns'
 import { bem } from '@/lib/bem'
-import { fetchSummary } from '@/lib/fetch-utils'
+import { fetchPaginated } from '@/lib/fetch-utils'
 import { itemWithStockStatusSchema, stockReportSummarySchema } from '@/lib/schemas'
 
-interface StockItem {
-  id: string
-  code: string
-  name: string
-  unit: string
-  currentStock: number
-  minStock: number
-  description: string | null
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
-  stockStatus: 'NORMAL' | 'LOW_STOCK' | 'OUT_OF_STOCK'
-  stockPercentage: number
-}
-
-interface PaginatedResponse<T> {
-  data: T[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-  summary: {
-    totalItems: number
-    lowStockCount: number
-    outOfStockCount: number
-    normalCount: number
-  }
-}
+type StockItem = z.infer<typeof itemWithStockStatusSchema>
+type StockReportSummary = z.infer<typeof stockReportSummarySchema>
 
 export default function StockReportPage() {
   const { showSuccess, showError } = useToast()
@@ -81,7 +54,7 @@ export default function StockReportPage() {
     return () => clearTimeout(timer)
   }, [search])
 
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -94,7 +67,7 @@ export default function StockReportPage() {
         params.append('search', debouncedSearch)
       }
 
-      const result = await fetchSummary<StockItem>(
+      const result = await fetchPaginated<StockItem>(
         `/api/reports/stock?${params.toString()}`,
         itemWithStockStatusSchema
       )
@@ -111,11 +84,11 @@ export default function StockReportPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+}, [pagination.page, pagination.limit, lowStockOnly, isActive, debouncedSearch, showError]);
 
   useEffect(() => {
     fetchItems()
-  }, [pagination.page, lowStockOnly, isActive, debouncedSearch])
+  }, [fetchItems])
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }))

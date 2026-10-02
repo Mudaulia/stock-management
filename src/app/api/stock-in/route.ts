@@ -4,6 +4,8 @@ import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
 
+export const dynamic = 'force-dynamic'
+
 const stockInCreateSchema = z.object({
   itemId: z.string().cuid('ID barang tidak valid'),
   quantity: z.number().int().positive('Jumlah harus lebih dari 0'),

@@ -1,11 +1,9 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, X, Package, ClipboardCheck, ArrowUp, ArrowDown, LogOut, User } from 'lucide-react'
+import { Menu, X, Package, ClipboardCheck, ArrowUp, ArrowDown, LogOut, User, FileText, TrendingUp, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { useDashboard } from './dashboard-context'
 import { bem } from '@/lib/bem'
 
@@ -15,18 +13,17 @@ interface SidebarProps {
 
 export function Sidebar({ userRole }: SidebarProps) {
   const { sidebarOpen, mobileMenuOpen, setSidebarOpen, setMobileMenuOpen } = useDashboard()
-  const [searchQuery, setSearchQuery] = useState('')
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Package },
+    { name: 'Data Barang', href: '/dashboard/items', icon: Package },
     { name: 'Stok Masuk', href: '/dashboard/stock-in', icon: ArrowUp },
     { name: 'Stok Keluar', href: '/dashboard/stock-out', icon: ArrowDown },
     { name: 'Opname', href: '/dashboard/opname', icon: ClipboardCheck },
+    { name: 'Laporan Stok', href: '/dashboard/reports/stock', icon: BarChart3 },
+    { name: 'Stok Rendah', href: '/dashboard/reports/low-stock', icon: TrendingUp },
+    { name: 'Mutasi Stok', href: '/dashboard/reports/mutation', icon: FileText },
   ]
-
-  const filteredNavigation = navigation.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
 
   const bemBlock = bem('sidebar')
 
@@ -69,16 +66,8 @@ export function Sidebar({ userRole }: SidebarProps) {
               </Button>
             </div>
             <div className={bemBlock.e('mobile-menu-body')}>
-              <div className={bemBlock.e('mobile-menu-search')}>
-                <Input
-                  placeholder="Cari..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={bemBlock.e('mobile-menu-search-input')}
-                />
-              </div>
               <nav className={bemBlock.e('mobile-menu-nav')}>
-                {filteredNavigation.map((item) => (
+                {navigation.map((item) => (
                   <Link
                     key={item.name}
                     href={item.href}
@@ -115,16 +104,8 @@ export function Sidebar({ userRole }: SidebarProps) {
             </Button>
           </div>
           <div className={bemBlock.e('desktop-body')}>
-            <div className={bemBlock.e('desktop-search')}>
-              <Input
-                placeholder="Cari..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={bemBlock.e('desktop-search-input')}
-              />
-            </div>
             <nav className={bemBlock.e('desktop-nav')}>
-              {filteredNavigation.map((item) => (
+              {navigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -181,7 +162,6 @@ export function Topbar({ }: TopbarProps) {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <h1 className={bemBlock.e('header-title')}>Dashboard</h1>
         </div>
         <div className={bemBlock.e('header-right')}>
           <div className={bemBlock.e('header-user-info')}>
@@ -193,12 +173,6 @@ export function Topbar({ }: TopbarProps) {
               <p className={bemBlock.e('header-user-role')}>Administrator</p>
             </div>
           </div>
-          <Button variant="outline" className={bemBlock.e('header-logout-button')} onClick={() => {
-            window.location.href = '/api/auth/logout'
-          }}>
-            <LogOut className={bemBlock.e('header-logout-button-icon')} />
-            Keluar
-          </Button>
         </div>
       </div>
     </div>

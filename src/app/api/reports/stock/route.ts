@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { handleApiError, paginatedResponse } from '@/lib/api-response'
 
@@ -7,8 +7,8 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession()
-    if (!session) {
+    const user = await getCurrentUser()
+    if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
