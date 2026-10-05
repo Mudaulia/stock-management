@@ -9,9 +9,11 @@ import { bem } from '@/lib/bem'
 
 interface SidebarProps {
   userRole: string
+  userName: string
+  userEmail: string
 }
 
-export function Sidebar({ userRole }: SidebarProps) {
+export function Sidebar({ userRole, userName, userEmail }: SidebarProps) {
   const { sidebarOpen, mobileMenuOpen, setSidebarOpen, setMobileMenuOpen } = useDashboard()
 
   const navigation = [
@@ -123,7 +125,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                 <User className={bemBlock.e('desktop-user-avatar-icon')} />
               </div>
               <div className={bemBlock.e('desktop-user-details')}>
-                <p className={bemBlock.e('desktop-user-name')}>Admin</p>
+                <p className={bemBlock.e('desktop-user-name')}>{userName}</p>
                 <p className={bemBlock.e('desktop-user-role')}>{userRole}</p>
               </div>
             </div>
@@ -142,10 +144,12 @@ export function Sidebar({ userRole }: SidebarProps) {
 }
 
 interface TopbarProps {
-  // No props needed - uses context
+  userRole: string
+  userName: string
+  userEmail: string
 }
 
-export function Topbar({ }: TopbarProps) {
+export function Topbar({ userRole, userName, userEmail }: TopbarProps) {
   const { sidebarOpen, mobileMenuOpen, setSidebarOpen, setMobileMenuOpen } = useDashboard()
 
   const bemBlock = bem('topbar')
@@ -169,8 +173,8 @@ export function Topbar({ }: TopbarProps) {
               <User className={bemBlock.e('header-user-avatar-icon')} />
             </div>
             <div className={bemBlock.e('header-user-details')}>
-              <p className={bemBlock.e('header-user-name')}>Admin</p>
-              <p className={bemBlock.e('header-user-role')}>Administrator</p>
+              <p className={bemBlock.e('header-user-name')}>{userName}</p>
+              <p className={bemBlock.e('header-user-role')}>{userRole}</p>
             </div>
           </div>
         </div>
