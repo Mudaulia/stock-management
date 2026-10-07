@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -37,8 +37,12 @@ import { cn } from '@/lib/utils'
 import { useToast, Toaster } from '@/components/ui/toaster'
 import { format } from 'date-fns'
 import { bem, bemVariant } from '@/lib/bem'
-import { fetchPaginated, fetchWithZod } from '@/lib/fetch-utils'
+import { useStockIn, useCreateStockIn, useItems } from '@/hooks/use-api'
 import { stockTransactionSchema, itemSchema } from '@/lib/schemas'
+import { SkeletonTable } from '@/components/ui/skeleton'
+import { useKeyboardNavigation, useRowSelection } from '@/hooks/use-keyboard-navigation'
+import { useUnsavedChangesWarning, useFormDirtyTracking } from '@/hooks/use-unsaved-changes'
+import { EmptyState, NoData } from '@/components/ui/empty-state'
 
 const stockInSchema = z.object({
   itemId: z.string().min(1, 'Barang wajib dipilih'),
@@ -53,21 +57,8 @@ type StockInForm = z.infer<typeof stockInSchema>
 type StockTransaction = z.infer<typeof stockTransactionSchema>
 type Item = z.infer<typeof itemSchema>
 
-interface PaginatedResponse<T> {
-  data: T[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-}
-
 export default function StockInPage() {
   const { showSuccess, showError } = useToast()
-  const [transactions, setTransactions] = useState<StockTransaction[]>([])
-  const [items, setItems] = useState<Item[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 })
@@ -93,88 +84,88 @@ export default function StockInPage() {
     },
   })
 
-  const fetchTransactions = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        ...(search && { search }),
-        ...(startDate && { startDate }),
-        ...(endDate && { endDate }),
-      })
-      const result = await fetchPaginated<StockTransaction>(
-        `/api/stock-in?${params.toString()}`,
-        stockTransactionSchema
-      )
+  // React Query hooks
+  const { data: transactionsData, isLoading, refetch: refetchTransactions } = useStockIn({
+    page: pagination.page,
+    limit: pagination.limit,
+    search,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+  })
 
-      if (!result.ok) {
-        throw new Error(result.message || 'Gagal memuat data')
-      }
+  const { data: itemsData } = useItems({
+    isActive: true,
+    limit: 1000,
+  })
 
-      setTransactions(result.data)
-      setPagination(prev => ({ ...prev, ...result.pagination }))
-    } catch (err) {
-      showError('Error', err instanceof Error ? err.message : 'Gagal memuat data stok masuk')
-    } finally {
-      setIsLoading(false)
-    }
-}, [pagination.page, pagination.limit, search, startDate, endDate, showError]);
-
-  const fetchItems = useCallback(async () => {
-    try {
-      const result = await fetchPaginated<Item>(
-        '/api/items?isActive=true&limit=1000',
-        itemSchema
-      )
-
-      if (!result.ok) {
-        throw new Error(result.message || 'Gagal memuat barang')
-      }
-
-      setItems(result.data)
-    } catch (err) {
-      console.error('Fetch items error:', err)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchTransactions()
-    fetchItems()
-  }, [fetchTransactions, fetchItems])
-
-  const onSubmit = async (data: StockInForm) => {
-    setIsSubmitting(true)
-    try {
-      const result = await fetchWithZod<StockTransaction>(
-        '/api/stock-in',
-        stockTransactionSchema,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        }
-      )
-
-      if (!result.ok) {
-        throw new Error(result.message || 'Gagal menyimpan')
-      }
-
+  const createMutation = useCreateStockIn({
+    onSuccess: () => {
       showSuccess('Berhasil', 'Stok masuk berhasil dicatat')
       setIsDialogOpen(false)
       reset({ quantity: 1, reference: '', notes: '', transactionDate: format(new Date(), 'yyyy-MM-dd') })
-      fetchTransactions()
-    } catch (err) {
-      showError('Error', err instanceof Error ? err.message : 'Gagal menyimpan')
-    } finally {
-      setIsSubmitting(false)
+      refetchTransactions()
+    },
+    onError: (err) => showError('Error', err.message),
+  })
+
+  const transactions = transactionsData?.data ?? []
+  const paginationData = transactionsData?.pagination
+  const items = itemsData?.data ?? []
+
+  // Track form dirty state for unsaved changes warning
+  const formValues = watch()
+  const initialFormValues = {
+    itemId: '',
+    quantity: 1,
+    reference: '',
+    notes: '',
+    transactionDate: format(new Date(), 'yyyy-MM-dd'),
+  }
+  const trackedFormValues = {
+    itemId: formValues.itemId ?? '',
+    quantity: formValues.quantity ?? 1,
+    reference: formValues.reference ?? '',
+    notes: formValues.notes ?? '',
+    transactionDate: formValues.transactionDate ?? format(new Date(), 'yyyy-MM-dd'),
+  }
+  const isFormDirty = useFormDirtyTracking(initialFormValues, trackedFormValues)
+
+  // Unsaved changes warning for dialog
+  const { confirmLeave } = useUnsavedChangesWarning({
+    isDirty: isFormDirty && isDialogOpen,
+    message: 'Anda memiliki perubahan yang belum disimpan. Yakin ingin menutup dialog ini?',
+  })
+
+  const handleDialogClose = async () => {
+    const confirmed = await confirmLeave()
+    if (confirmed) {
+      setIsDialogOpen(false)
     }
   }
+
+  // Keyboard navigation
+  const { tableRef, selectedIndex, setSelectedIndex } = useKeyboardNavigation<StockTransaction>({
+    rowCount: transactions.length,
+    enabled: !isLoading && transactions.length > 0,
+  })
+
+  // Row selection for bulk actions
+  const { selectedIds, selectedCount, toggleRow, toggleAll, clearSelection, isSelected } = useRowSelection<StockTransaction>()
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     setPagination({ ...pagination, page: 1 })
-    fetchTransactions()
+  }
+
+  const onSubmit = async (data: StockInForm) => {
+    setIsSubmitting(true)
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (err) {
+      // Error handled by mutation onError
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -226,24 +217,40 @@ export default function StockInPage() {
       <Card>
         <CardContent className="pt-0">
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <SkeletonTable rows={5} columns={7} />
           ) : transactions.length === 0 ? (
-            <div className="stock-in__empty-state">
-              <Package className="stock-in__empty-icon" />
-              <p className="stock-in__empty-text">Belum ada transaksi stok masuk</p>
-              <Button onClick={() => setIsDialogOpen(true)} className="stock-in__empty-button">
-                <Plus className="stock-in__empty-button-icon" />
-                Tambah Transaksi Pertama
-              </Button>
-            </div>
+            <NoData
+              title="Belum ada transaksi stok masuk"
+              description="Catat transaksi stok masuk pertama Anda."
+              actionLabel="Tambah Transaksi Pertama"
+              onAction={() => setIsDialogOpen(true)}
+            />
           ) : (
             <>
-              <div className="stock-in__table-container">
+              {/* Bulk Actions Bar */}
+              {selectedCount > 0 && (
+                <div className="mb-4 flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <span className="text-sm font-medium">
+                    {selectedCount} transaksi terpilih
+                  </span>
+                  <Button variant="ghost" size="sm" onClick={clearSelection}>
+                    Batal
+                  </Button>
+                </div>
+              )}
+              <div className="stock-in__table-container" ref={tableRef} tabIndex={0}>
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="stock-in__table-cell stock-in__table-cell--select w-12">
+                        <input
+                          type="checkbox"
+                          checked={selectedCount === transactions.length && transactions.length > 0}
+                          onChange={() => toggleAll(transactions.map(t => t.id))}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          aria-label="Pilih semua"
+                        />
+                      </TableHead>
                       <TableHead className="stock-in__table-cell stock-in__table-cell--index">#{' '}</TableHead>
                       <TableHead className="stock-in__table-cell stock-in__table-cell--date">Tanggal</TableHead>
                       <TableHead className="stock-in__table-cell stock-in__table-cell--item">Barang</TableHead>
@@ -257,8 +264,18 @@ export default function StockInPage() {
                   <TableBody>
                     {transactions.map((tx, index) => {
                       const globalIndex = (pagination.page - 1) * pagination.limit + index + 1
+                      const rowSelected = isSelected(tx.id)
                       return (
-                        <TableRow key={tx.id} className="stock-in__table-row">
+                        <TableRow key={tx.id} className={cn("stock-in__table-row", rowSelected && "bg-primary/5")} onClick={() => toggleRow(tx.id)}>
+                          <TableCell className="stock-in__table-cell stock-in__table-cell--select w-12">
+                            <input
+                              type="checkbox"
+                              checked={rowSelected}
+                              onChange={(e) => { e.stopPropagation(); toggleRow(tx.id); }}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                              aria-label={`Pilih transaksi ${tx.id}`}
+                            />
+                          </TableCell>
                           <TableCell className="stock-in__table-cell stock-in__table-cell--index">
                             {globalIndex}
                           </TableCell>
@@ -284,7 +301,7 @@ export default function StockInPage() {
                     <TableRow>
                       <TableCell colSpan={8} className="stock-in__table-footer stock-in__table-footer--pagination">
                         <div className="stock-in__pagination-info">
-                          Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total}
+                          Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, paginationData?.total ?? 0)} dari {paginationData?.total ?? 0}
                         </div>
                         <div className="stock-in__pagination-controls">
                           <Button
@@ -299,7 +316,7 @@ export default function StockInPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-                            disabled={pagination.page === pagination.totalPages}
+                            disabled={pagination.page === (paginationData?.totalPages ?? 1)}
                           >
                             Selanjutnya
                           </Button>
@@ -315,7 +332,7 @@ export default function StockInPage() {
       </Card>
 
       {/* Create Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Tambah Stok Masuk</DialogTitle>
@@ -379,8 +396,8 @@ export default function StockInPage() {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Batal
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" disabled={isSubmitting || createMutation.isPending}>
+                {isSubmitting || createMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Menyimpan...

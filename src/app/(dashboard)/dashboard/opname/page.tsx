@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -47,8 +47,12 @@ import { cn } from '@/lib/utils'
 import { useToast, Toaster } from '@/components/ui/toaster'
 import { format } from 'date-fns'
 import { bem, bemVariant } from '@/lib/bem'
-import { fetchPaginated, fetchWithZod } from '@/lib/fetch-utils'
+import { useOpname, useCreateOpname, useReconcileOpname, useCancelOpname, useItems } from '@/hooks/use-api'
 import { stockOpnameSchema, itemSchema } from '@/lib/schemas'
+import { SkeletonTable } from '@/components/ui/skeleton'
+import { useKeyboardNavigation, useRowSelection } from '@/hooks/use-keyboard-navigation'
+import { useUnsavedChangesWarning, useFormDirtyTracking } from '@/hooks/use-unsaved-changes'
+import { EmptyState, NoData } from '@/components/ui/empty-state'
 
 const opnameFormSchema = z.object({
   itemId: z.string().min(1, 'Barang wajib dipilih'),
@@ -62,21 +66,8 @@ type OpnameForm = z.infer<typeof opnameFormSchema>
 type StockOpname = z.infer<typeof stockOpnameSchema>
 type Item = z.infer<typeof itemSchema>
 
-interface PaginatedResponse<T> {
-  data: T[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-}
-
 export default function OpnamePage() {
   const { showSuccess, showError } = useToast()
-  const [opnames, setOpnames] = useState<StockOpname[]>([])
-  const [items, setItems] = useState<Item[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isReconciling, setIsReconciling] = useState(false)
@@ -106,115 +97,105 @@ export default function OpnamePage() {
     },
   })
 
-  const fetchOpnames = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        ...(search && { search }),
-        ...(statusFilter && { status: statusFilter }),
-        ...(startDate && { startDate }),
-        ...(endDate && { endDate }),
-      })
-      const result = await fetchPaginated<StockOpname>(
-        `/api/opname?${params.toString()}`,
-        stockOpnameSchema
-      )
+  // React Query hooks
+  const { data: opnamesData, isLoading, refetch: refetchOpnames } = useOpname({
+    page: pagination.page,
+    limit: pagination.limit,
+    search,
+    status: statusFilter || undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+  })
 
-      if (!result.ok) {
-        throw new Error(result.message || 'Gagal memuat data')
-      }
+  const { data: itemsData } = useItems({
+    isActive: true,
+    limit: 1000,
+  })
 
-      setOpnames(result.data)
-      setPagination(prev => ({ ...prev, ...result.pagination }))
-    } catch (err) {
-      showError('Error', err instanceof Error ? err.message : 'Gagal memuat data opname')
-    } finally {
-      setIsLoading(false)
-    }
-}, [pagination.page, pagination.limit, search, statusFilter, startDate, endDate, showError]);
-
-  const fetchItems = useCallback(async () => {
-    try {
-      const result = await fetchPaginated<Item>(
-        '/api/items?isActive=true&limit=1000',
-        itemSchema
-      )
-
-      if (!result.ok) {
-        throw new Error(result.message || 'Gagal memuat barang')
-      }
-
-      setItems(result.data)
-    } catch (err) {
-      console.error('Fetch items error:', err)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchOpnames()
-    fetchItems()
-  }, [fetchOpnames, fetchItems])
-
-  const onSubmit = async (data: OpnameForm) => {
-    setIsSubmitting(true)
-    try {
-      const result = await fetchWithZod<StockOpname>(
-        '/api/opname',
-        stockOpnameSchema,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        }
-      )
-
-      if (!result.ok) {
-        throw new Error(result.message || 'Gagal menyimpan')
-      }
-
+  const createMutation = useCreateOpname({
+    onSuccess: () => {
       showSuccess('Berhasil', 'Opname berhasil dibuat')
       setIsDialogOpen(false)
       reset({ physicalStock: 0, notes: '', opnameDate: format(new Date(), 'yyyy-MM-dd') })
-      fetchOpnames()
-    } catch (err) {
-      showError('Error', err instanceof Error ? err.message : 'Gagal menyimpan')
-    } finally {
-      setIsSubmitting(false)
+      refetchOpnames()
+    },
+    onError: (err) => showError('Error', err.message),
+  })
+
+  const reconcileMutation = useReconcileOpname({
+    onSuccess: () => {
+      showSuccess('Berhasil', 'Opname berhasil direkonsiliasi')
+      setShowReconcileDialog(false)
+      setSelectedOpname(null)
+      refetchOpnames()
+    },
+    onError: (err) => showError('Error', err.message),
+  })
+
+  const cancelMutation = useCancelOpname({
+    onSuccess: () => {
+      showSuccess('Berhasil', 'Opname dibatalkan')
+      setShowCancelDialog(false)
+      setSelectedOpname(null)
+      refetchOpnames()
+    },
+    onError: (err) => showError('Error', err.message),
+  })
+
+  const opnames = opnamesData?.data ?? []
+  const paginationData = opnamesData?.pagination
+  const items = itemsData?.data ?? []
+
+  // Track form dirty state for unsaved changes warning
+  const formValues = watch()
+  const initialFormValues = {
+    itemId: '',
+    physicalStock: 0,
+    notes: '',
+    opnameDate: format(new Date(), 'yyyy-MM-dd'),
+  }
+  const trackedFormValues = {
+    itemId: formValues.itemId ?? '',
+    physicalStock: formValues.physicalStock ?? 0,
+    notes: formValues.notes ?? '',
+    opnameDate: formValues.opnameDate ?? format(new Date(), 'yyyy-MM-dd'),
+  }
+  const isFormDirty = useFormDirtyTracking(initialFormValues, trackedFormValues)
+
+  // Unsaved changes warning for dialog
+  const { confirmLeave } = useUnsavedChangesWarning({
+    isDirty: isFormDirty && isDialogOpen,
+    message: 'Anda memiliki perubahan yang belum disimpan. Yakin ingin menutup dialog ini?',
+  })
+
+  const handleDialogClose = async () => {
+    const confirmed = await confirmLeave()
+    if (confirmed) {
+      setIsDialogOpen(false)
     }
+  }
+
+  // Keyboard navigation
+  const { tableRef, selectedIndex, setSelectedIndex } = useKeyboardNavigation<StockOpname>({
+    rowCount: opnames.length,
+    enabled: !isLoading && opnames.length > 0,
+  })
+
+  // Row selection for bulk actions
+  const { selectedIds, selectedCount, toggleRow, toggleAll, clearSelection, isSelected } = useRowSelection<StockOpname>()
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    setPagination({ ...pagination, page: 1 })
   }
 
   const handleReconcile = async () => {
     if (!selectedOpname) return
     setIsReconciling(true)
     try {
-      const result = await fetchWithZod<{ updatedOpname: StockOpname; reconciliation: unknown }>(
-        `/api/opname/${selectedOpname.id}/reconcile`,
-        z.object({
-          data: z.object({
-            updatedOpname: stockOpnameSchema,
-            reconciliation: z.unknown(),
-          }),
-        }),
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
-        }
-      )
-
-      if (!result.ok) {
-        throw new Error(result.message || 'Gagal merekonsiliasi')
-      }
-
-      showSuccess('Berhasil', 'Opname berhasil direkonsiliasi')
-      setShowReconcileDialog(false)
-      setSelectedOpname(null)
-      fetchOpnames()
-      fetchItems()
+      await reconcileMutation.mutateAsync({ id: selectedOpname.id, data: {} })
     } catch (err) {
-      showError('Error', err instanceof Error ? err.message : 'Gagal merekonsiliasi')
+      // Error handled by mutation onError
     } finally {
       setIsReconciling(false)
     }
@@ -224,33 +205,12 @@ export default function OpnamePage() {
     if (!selectedOpname) return
     setIsReconciling(true)
     try {
-      const result = await fetchWithZod<{ message: string }>(
-        `/api/opname/${selectedOpname.id}`,
-        z.object({ message: z.string() }),
-        {
-          method: 'DELETE',
-        }
-      )
-
-      if (!result.ok) {
-        throw new Error(result.message || 'Gagal membatalkan')
-      }
-
-      showSuccess('Berhasil', 'Opname dibatalkan')
-      setShowCancelDialog(false)
-      setSelectedOpname(null)
-      fetchOpnames()
+      await cancelMutation.mutateAsync(selectedOpname.id)
     } catch (err) {
-      showError('Error', err instanceof Error ? err.message : 'Gagal membatalkan')
+      // Error handled by mutation onError
     } finally {
       setIsReconciling(false)
     }
-  }
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    setPagination({ ...pagination, page: 1 })
-    fetchOpnames()
   }
 
   const getStatusBadge = (status: string) => {
@@ -278,6 +238,17 @@ export default function OpnamePage() {
   }
 
   const bemBlock = bem('opname')
+
+  const onSubmit = async (data: OpnameForm) => {
+    setIsSubmitting(true)
+    try {
+      await createMutation.mutateAsync(data)
+    } catch (err) {
+      // Error handled by mutation onError
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className={bemBlock.b()}>
@@ -342,25 +313,41 @@ export default function OpnamePage() {
       <Card>
         <CardContent className={bemBlock.e('table-card')}>
           {isLoading ? (
-            <div className={bemBlock.e('loading-state')}>
-              <Loader2 className={bemBlock.e('loading-icon')} />
-            </div>
+            <SkeletonTable rows={5} columns={9} />
           ) : opnames.length === 0 ? (
-            <div className={bemBlock.e('empty-state')}>
-              <Package className={bemBlock.e('empty-icon')} />
-              <p className={bemBlock.e('empty-text')}>Belum ada data opname</p>
-              <Button onClick={() => setIsDialogOpen(true)} className={bemBlock.e('empty-button')}>
-                <Plus className="mr-2 h-4 w-4" />
-                Buat Opname Pertama
-              </Button>
-            </div>
+            <NoData
+              title="Belum ada data opname"
+              description="Buat opname pertama Anda untuk memulai pencatatan stok fisik."
+              actionLabel="Buat Opname Pertama"
+              onAction={() => setIsDialogOpen(true)}
+            />
           ) : (
             <>
-              <div className={bemBlock.e('table-container')}>
+              {/* Bulk Actions Bar */}
+              {selectedCount > 0 && (
+                <div className="mb-4 flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <span className="text-sm font-medium">
+                    {selectedCount} opname terpilih
+                  </span>
+                  <Button variant="ghost" size="sm" onClick={clearSelection}>
+                    Batal
+                  </Button>
+                </div>
+              )}
+              <div className={bemBlock.e('table-container')} ref={tableRef} tabIndex={0}>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className={bemBlock.e('table-header-cell', 'index')}>#</TableHead>
+                      <TableHead className={cn(bemBlock.e('table-header-cell', 'select'), 'w-12')}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCount === opnames.length && opnames.length > 0}
+                          onChange={() => toggleAll(opnames.map(o => o.id))}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          aria-label="Pilih semua"
+                        />
+                      </TableHead>
                       <TableHead className={bemBlock.e('table-header-cell', 'date')}>Tanggal</TableHead>
                       <TableHead className={bemBlock.e('table-header-cell', 'item')}>Barang</TableHead>
                       <TableHead className={cn(bemBlock.e('table-header-cell', 'system-stock'), 'text-right')}>Stok Sistem</TableHead>
@@ -375,9 +362,19 @@ export default function OpnamePage() {
                   <TableBody>
                     {opnames.map((op, index) => {
                       const globalIndex = (pagination.page - 1) * pagination.limit + index + 1
+                      const rowSelected = isSelected(op.id)
                       return (
-                        <TableRow key={op.id}>
+                        <TableRow key={op.id} className={cn(rowSelected && "bg-primary/5")} onClick={() => toggleRow(op.id)}>
                           <TableCell className={bemBlock.e('table-cell', 'index')}>{globalIndex}</TableCell>
+                          <TableCell className={cn(bemBlock.e('table-cell', 'select'), 'w-12')}>
+                            <input
+                              type="checkbox"
+                              checked={rowSelected}
+                              onChange={(e) => { e.stopPropagation(); toggleRow(op.id); }}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                              aria-label={`Pilih opname ${op.id}`}
+                            />
+                          </TableCell>
                           <TableCell className={bemBlock.e('table-cell', 'date')}>
                             {format(new Date(op.opnameDate), 'dd MMM yyyy')}
                           </TableCell>
@@ -396,10 +393,7 @@ export default function OpnamePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => {
-                                  setSelectedOpname(op)
-                                  setShowReconcileDialog(true)
-                                }}
+                                onClick={(e) => { e.stopPropagation(); setSelectedOpname(op); setShowReconcileDialog(true); }}
                                 disabled={op.status !== 'PENDING'}
                                 title="Rekonsiliasi"
                               >
@@ -409,10 +403,7 @@ export default function OpnamePage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => {
-                                    setSelectedOpname(op)
-                                    setShowCancelDialog(true)
-                                  }}
+                                  onClick={(e) => { e.stopPropagation(); setSelectedOpname(op); setShowCancelDialog(true); }}
                                   title="Batalkan"
                                 >
                                   <Trash2 className={bemBlock.e('action-icon', 'cancel')} />
@@ -421,10 +412,7 @@ export default function OpnamePage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => {
-                                  setSelectedOpname(op)
-                                  setShowReconcileDialog(true)
-                                }}
+                                onClick={(e) => { e.stopPropagation(); setSelectedOpname(op); setShowReconcileDialog(true); }}
                                 disabled={op.status !== 'RECONCILED'}
                                 title="Lihat Detail"
                               >
@@ -440,7 +428,7 @@ export default function OpnamePage() {
                     <TableRow>
                       <TableCell colSpan={10} className={cn(bemBlock.e('table-footer'), 'flex', 'items-center', 'justify-between')}>
                         <div className={bemBlock.e('pagination-info')}>
-                          Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total}
+                          Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, paginationData?.total ?? 0)} dari {paginationData?.total ?? 0}
                         </div>
                         <div className={bemBlock.e('pagination-controls')}>
                           <Button
@@ -455,7 +443,7 @@ export default function OpnamePage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-                            disabled={pagination.page === pagination.totalPages}
+                            disabled={pagination.page === (paginationData?.totalPages ?? 1)}
                           >
                             Selanjutnya
                           </Button>
@@ -471,7 +459,7 @@ export default function OpnamePage() {
       </Card>
 
       {/* Create Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className={bemBlock.e('dialog', 'sm:max-w-[500px]')}>
           <DialogHeader>
             <DialogTitle className={bemBlock.e('dialog-title')}>Buat Opname Baru</DialogTitle>
@@ -527,8 +515,8 @@ export default function OpnamePage() {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Batal
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" disabled={isSubmitting || createMutation.isPending}>
+                {isSubmitting || createMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Menyimpan...
@@ -569,8 +557,8 @@ export default function OpnamePage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleReconcile} disabled={isReconciling}>
-              {isReconciling ? (
+            <AlertDialogAction onClick={handleReconcile} disabled={isReconciling || reconcileMutation.isPending}>
+              {isReconciling || reconcileMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Memproses...
@@ -603,8 +591,8 @@ export default function OpnamePage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancel} disabled={isReconciling}>
-              {isReconciling ? (
+            <AlertDialogAction onClick={handleCancel} disabled={isReconciling || cancelMutation.isPending}>
+              {isReconciling || cancelMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Memproses...

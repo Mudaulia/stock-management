@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
+import { verifyCSRF } from '@/lib/csrf'
 
 export const dynamic = 'force-dynamic'
 
@@ -134,7 +135,72 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  // CSRF protection
+  const csrfResult = await verifyCSRF(request)
+  if (!csrfResult.valid) {
+    return csrfResult.response!
+  }
+
+  try {
+    const user = await getCurrentUser()
+
+    if (
+      !user ||
+      (user.role !== 'ADMIN' &&
+        user.role !== 'WAREHOUSE_STAFF')
+    ) {
+      return NextResponse.json(
+        { message: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const { ids } = z.object({ ids: z.array(z.string()).min(1) }).parse(body)
+
+    await prisma.$transaction(async (tx) => {
+      // Delete related stock transactions first (cascade would handle this but being explicit)
+      await tx.stockTransaction.deleteMany({
+        where: { itemId: { in: ids } },
+      })
+
+      // Delete related opnames
+      await tx.stockOpname.deleteMany({
+        where: { itemId: { in: ids } },
+      })
+
+      // Delete items
+      await tx.item.deleteMany({
+        where: { id: { in: ids } },
+      })
+
+      // Create audit logs
+      for (const id of ids) {
+        await tx.auditLog.create({
+          data: {
+            userId: user.id,
+            action: 'DELETE',
+            entity: 'ITEM',
+            entityId: id,
+          },
+        })
+      }
+    })
+
+    return NextResponse.json(successResponse({ deletedCount: ids.length }))
+  } catch (error) {
+    return handleApiError(error)
+  }
+}
+
 export async function POST(request: NextRequest) {
+  // CSRF protection
+  const csrfResult = await verifyCSRF(request)
+  if (!csrfResult.valid) {
+    return csrfResult.response!
+  }
+
   try {
     const user = await getCurrentUser()
 

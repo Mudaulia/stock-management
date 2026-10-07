@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { handleApiError, successResponse } from '@/lib/api-response'
+import { verifyCSRF } from '@/lib/csrf'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +29,12 @@ export async function POST(
     params: Promise<{ id: string }>
   }
 ) {
+  // CSRF protection
+  const csrfResult = await verifyCSRF(request)
+  if (!csrfResult.valid) {
+    return csrfResult.response!
+  }
+
   try {
     const user = await getCurrentUser()
 

@@ -135,6 +135,9 @@ export function handleApiError(error: unknown): NextResponse {
     return errorResponse(error.message, error.statusCode, error.code)
   }
 
-  console.error('Unhandled API error:', error)
+  // Log error in development only
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Unhandled API error:', error)
+  }
   return errorResponse('Terjadi kesalahan server', 500)
 }

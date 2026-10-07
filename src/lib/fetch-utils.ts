@@ -48,6 +48,26 @@ export const apiSuccessSchema = <T extends ZodTypeAny>(dataSchema: T) =>
   })
 
 /**
+ * Zod schema for a paginated list response with a custom summary schema.
+ */
+export const apiSuccessSchemaWithSummary = <T extends ZodTypeAny, S extends ZodTypeAny>(
+  dataSchema: T,
+  summarySchema: S
+) =>
+  z.object({
+    data: dataSchema,
+    pagination: z
+      .object({
+        page: z.number(),
+        limit: z.number(),
+        total: z.number(),
+        totalPages: z.number(),
+      })
+      .optional(),
+    summary: summarySchema.optional(),
+  })
+
+/**
  * Zod schema for the standard API error response envelope.
  */
 export const apiErrorSchema = z.object({
@@ -126,11 +146,8 @@ export async function fetchWithZod<T>(
       ...init,
       credentials: 'include' as RequestCredentials,
     }
-    console.log('fetchWithZod: fetching', input, fetchInit)
     const response = await fetch(input, fetchInit)
-    console.log('fetchWithZod: response status', response.status)
     const body = await response.json()
-    console.log('fetchWithZod: response body', body)
 
     if (!response.ok) {
       // Try to parse as standardized error response
@@ -228,12 +245,37 @@ export async function fetchWithZod<T>(
  * setPagination(result.pagination)
  * ```
  */
-export async function fetchPaginated<T>(
+export async function fetchPaginated<T extends ZodTypeAny>(
   url: string,
-  dataSchema: ZodTypeAny,
+  dataSchema: T,
   init?: RequestInit
-): Promise<FetchResult<T[]>> {
-  return fetchWithZod<T[]>(url, paginatedResponseSchema(dataSchema), init)
+): Promise<FetchResult<{ data: z.infer<T>[]; pagination?: Pagination; summary?: Record<string, unknown> }>> {
+  return fetchWithZod<{ data: z.infer<T>[]; pagination?: Pagination; summary?: Record<string, unknown> }>(url, paginatedResponseSchema(dataSchema), init)
+}
+
+/**
+ * Convenience wrapper for fetching a paginated list with a custom summary schema.
+ *
+ * @example
+ * ```ts
+ * const result = await fetchPaginatedWithSummary('/api/reports/stock', stockReportItemSchema, stockReportSummarySchema)
+ * if (!result.ok) { showError(result.message); return }
+ * setItems(result.data)
+ * setPagination(result.pagination)
+ * setSummary(result.summary)
+ * ```
+ */
+export async function fetchPaginatedWithSummary<T extends ZodTypeAny, S extends ZodTypeAny>(
+  url: string,
+  dataSchema: T,
+  summarySchema: S,
+  init?: RequestInit
+): Promise<FetchResult<{ data: z.infer<T>[]; pagination?: Pagination; summary?: z.infer<S> }>> {
+  return fetchWithZod<{ data: z.infer<T>[]; pagination?: Pagination; summary?: z.infer<S> }>(
+    url,
+    apiSuccessSchemaWithSummary(z.array(dataSchema), summarySchema),
+    init
+  )
 }
 
 /**

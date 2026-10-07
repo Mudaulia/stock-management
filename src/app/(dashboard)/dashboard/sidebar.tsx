@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Menu, X, Package, ClipboardCheck, ArrowUp, ArrowDown, LogOut, User, FileText, TrendingUp, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -15,12 +16,34 @@ interface SidebarProps {
 
 export function Sidebar({ userRole, userName, userEmail }: SidebarProps) {
   const { sidebarOpen, mobileMenuOpen, setSidebarOpen, setMobileMenuOpen } = useDashboard()
+  const [touchStartX, setTouchStartX] = useState<number | null>(null)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX === null) return
+    const touchEndX = e.touches[0].clientX
+    const diff = touchStartX - touchEndX
+    // Swipe left to close (diff > 50px)
+    if (diff > 50 && mobileMenuOpen) {
+      setMobileMenuOpen(false)
+      setTouchStartX(null)
+    }
+  }
+
+  const handleTouchEnd = () => {
+    setTouchStartX(null)
+  }
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Package },
     { name: 'Data Barang', href: '/dashboard/items', icon: Package },
     { name: 'Stok Masuk', href: '/dashboard/stock-in', icon: ArrowUp },
     { name: 'Stok Keluar', href: '/dashboard/stock-out', icon: ArrowDown },
+    { name: 'Penyesuaian Stok', href: '/dashboard/stock-adjustment', icon: ArrowUp },
     { name: 'Opname', href: '/dashboard/opname', icon: ClipboardCheck },
     { name: 'Laporan Stok', href: '/dashboard/reports/stock', icon: BarChart3 },
     { name: 'Stok Rendah', href: '/dashboard/reports/low-stock', icon: TrendingUp },
@@ -55,7 +78,13 @@ export function Sidebar({ userRole, userName, userEmail }: SidebarProps) {
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className={bemBlock.e('mobile-menu')}>
+        <div
+          ref={mobileMenuRef}
+          className={bemBlock.e('mobile-menu')}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <div className={bemBlock.e('mobile-menu-content')}>
             <div className={bemBlock.e('mobile-menu-header')}>
               <h1 className={bemBlock.e('mobile-menu-title')}>Sistem Manajemen Stok</h1>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -55,11 +55,13 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast, Toaster } from "@/components/ui/toaster";
 import { bem, bemVariant } from "@/lib/bem";
-import { fetchPaginated, fetchWithZod } from "@/lib/fetch-utils";
+import { useItems, useCreateItem, useUpdateItem, useDeleteItem, useBulkDeleteItems, useExportItems } from "@/hooks/use-api";
 import { itemSchema } from "@/lib/schemas";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { useKeyboardNavigation, useRowSelection, useUnsavedChangesWarning, useFormDirtyTracking } from "@/hooks";
+import { EmptyState, NoData } from "@/components/ui/empty-state";
 
 type ItemForm = z.infer<typeof itemSchema>;
-
 type Item = z.infer<typeof itemSchema>;
 
 const UNITS = ["PCS", "SET", "LITER", "UNIT", "METER", "KG", "BOX", "PACK"];
@@ -67,22 +69,19 @@ const UNITS = ["PCS", "SET", "LITER", "UNIT", "METER", "KG", "BOX", "PACK"];
 export default function ItemsPage() {
   const router = useRouter();
   const { showSuccess, showError } = useToast();
-  const [items, setItems] = useState<Item[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [isActiveFilter, setIsActiveFilter] = useState<
+    "all" | "true" | "false"
+  >("all");
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
     total: 0,
     totalPages: 0,
   });
-  const [search, setSearch] = useState("");
-  const [isActiveFilter, setIsActiveFilter] = useState<
-    "all" | "true" | "false"
-  >("all");
 
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const {
@@ -106,43 +105,88 @@ export default function ItemsPage() {
 
   const watchedUnit = watch("unit");
 
-  const fetchItems = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        ...(search && { search }),
-        ...(isActiveFilter !== "all" && {
-          isActive: isActiveFilter.toString(),
-        }),
-      });
-      const result = await fetchPaginated<Item>(
-        `/api/items?${params.toString()}`,
-        itemSchema
-      );
+  // React Query hooks
+  const { data: itemsData, isLoading, refetch } = useItems({
+    page: pagination.page,
+    limit: pagination.limit,
+    search,
+    isActive: isActiveFilter !== "all" ? isActiveFilter === "true" : undefined,
+  });
 
-      if (!result.ok) {
-        throw new Error(result.message || 'Gagal memuat data');
-      }
+  const createMutation = useCreateItem({
+    onSuccess: () => {
+      showSuccess("Berhasil ditambahkan");
+      setIsDialogOpen(false);
+      refetch();
+    },
+    onError: (err) => showError("Error", err.message),
+  });
 
-      setItems(result.data);
-      setPagination(prev => ({ ...prev, ...result.pagination }));
-    } catch (err) {
-      showError("Error", err instanceof Error ? err.message : "Gagal memuat data barang");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [pagination.page, pagination.limit, search, isActiveFilter, showError]);
+  const updateMutation = useUpdateItem({
+    onSuccess: () => {
+      showSuccess("Berhasil diupdate");
+      setIsDialogOpen(false);
+      refetch();
+    },
+    onError: (err) => showError("Error", err.message),
+  });
 
-  useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+  const deleteMutation = useDeleteItem({
+    onSuccess: () => {
+      showSuccess("Berhasil dihapus");
+      setDeleteConfirm(null);
+      refetch();
+    },
+    onError: (err) => showError("Error", err.message),
+  });
+
+  const bulkDeleteMutation = useBulkDeleteItems({
+    onSuccess: () => {
+      showSuccess("Berhasil menghapus item terpilih");
+      clearSelection();
+      refetch();
+    },
+    onError: (err) => showError("Error", err.message),
+  });
+
+  const exportMutation = useExportItems({
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `items-export-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      showSuccess("Berhasil mengekspor data")
+    },
+    onError: (err) => showError("Error", err.message),
+  });
+
+  const items = itemsData?.data ?? [];
+  const paginationData = itemsData?.pagination;
+
+  // Keyboard navigation
+  const { tableRef, selectedIndex, setSelectedIndex } = useKeyboardNavigation<Item>({
+    rowCount: items.length,
+    enabled: !isLoading && items.length > 0,
+  });
+
+  // Row selection for bulk actions
+  const { selectedIds, selectedCount, toggleRow, toggleAll, clearSelection, isSelected } = useRowSelection<Item>();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPagination({ ...pagination, page: 1 });
-    fetchItems();
+  };
+
+  const handlePageChange = (page: number) => {
+    setPagination({ ...pagination, page });
+  };
+
+  const handleLimitChange = (limit: number) => {
+    setPagination({ ...pagination, limit, page: 1 });
   };
 
   const openCreateDialog = () => {
@@ -172,59 +216,61 @@ export default function ItemsPage() {
   };
 
   const onSubmit = async (data: ItemForm) => {
-    setIsSubmitting(true);
-    try {
-      const url = editingItem ? `/api/items/${editingItem.id}` : "/api/items";
-      const method = editingItem ? "PUT" : "POST";
-      const result = await fetchWithZod<Item>(
-        url,
-        itemSchema,
-        {
-          method,
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        }
-      );
-
-      if (!result.ok) {
-        throw new Error(result.message || "Gagal menyimpan");
-      }
-
-      showSuccess(editingItem ? "Berhasil diupdate" : "Berhasil ditambahkan");
-      setIsDialogOpen(false);
-      fetchItems();
-    } catch (err) {
-      showError(
-        "Error",
-        err instanceof Error ? err.message : "Gagal menyimpan",
-      );
-    } finally {
-      setIsSubmitting(false);
+    if (editingItem) {
+      updateMutation.mutate({ id: editingItem.id, data });
+    } else {
+      createMutation.mutate(data);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      const result = await fetchWithZod<{ message: string }>(
-        `/api/items/${id}`,
-        z.object({ message: z.string() }),
-        { method: "DELETE" }
-      );
-
-      if (!result.ok) {
-        throw new Error(result.message || "Gagal menghapus");
-      }
-
-      showSuccess("Berhasil dihapus");
-      setDeleteConfirm(null);
-      fetchItems();
-    } catch (err) {
-      showError(
-        "Error",
-        err instanceof Error ? err.message : "Gagal menghapus",
-      );
-    }
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
   };
+
+  const handleBulkDelete = () => {
+    if (selectedCount === 0) return
+    if (confirm(`Yakin ingin menghapus ${selectedCount} item terpilih?`)) {
+      bulkDeleteMutation.mutate(Array.from(selectedIds))
+    }
+  }
+
+  const handleExport = () => {
+    exportMutation.mutate({ ids: Array.from(selectedIds), params: { search, isActive: isActiveFilter !== "all" ? isActiveFilter === "true" : undefined } })
+  }
+
+  // Track form dirty state for unsaved changes warning
+  const formValues = watch()
+  const initialFormValues = {
+    code: "",
+    name: "",
+    unit: "PCS",
+    minStock: 0,
+    currentStock: 0,
+    description: "",
+  }
+  // Only track the form fields we care about
+  const trackedFormValues = {
+    code: formValues.code ?? "",
+    name: formValues.name ?? "",
+    unit: formValues.unit ?? "PCS",
+    minStock: formValues.minStock ?? 0,
+    currentStock: formValues.currentStock ?? 0,
+    description: formValues.description ?? "",
+  }
+  const isFormDirty = useFormDirtyTracking(initialFormValues, trackedFormValues)
+
+  // Unsaved changes warning for dialog
+  const { confirmLeave } = useUnsavedChangesWarning({
+    isDirty: isFormDirty && isDialogOpen,
+    message: 'Anda memiliki perubahan yang belum disimpan. Yakin ingin menutup dialog ini?',
+  })
+
+  const handleDialogClose = async () => {
+    const confirmed = await confirmLeave()
+    if (confirmed) {
+      setIsDialogOpen(false)
+    }
+  }
 
   const getStockStatus = (item: Item) => {
     if (item.currentStock <= 0)
@@ -267,20 +313,17 @@ export default function ItemsPage() {
               />
             </div>
             <Select
-  value={isActiveFilter}
-  onValueChange={(value: string) =>
-    setIsActiveFilter(value as "all" | "true" | "false")
-  }
->
-
+              value={isActiveFilter}
+              onValueChange={(value: string) =>
+                setIsActiveFilter(value as "all" | "true" | "false")
+              }
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Semua Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua</SelectItem>
-
                 <SelectItem value="true">Aktif</SelectItem>
-
                 <SelectItem value="false">Nonaktif</SelectItem>
               </SelectContent>
             </Select>
@@ -292,24 +335,48 @@ export default function ItemsPage() {
       <Card>
         <CardContent className="pt-0">
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <SkeletonTable rows={5} columns={9} />
           ) : items.length === 0 ? (
-            <div className="items__empty-state">
-              <Package className="items__empty-icon" />
-              <p className="items__empty-text">Belum ada data barang</p>
-              <Button onClick={openCreateDialog} className="items__empty-button">
-                <Plus className="items__empty-button-icon" />
-                Tambah Barang Pertama
-              </Button>
-            </div>
+            <NoData
+              title="Belum ada data barang"
+              description="Mulai dengan menambahkan barang pertama Anda."
+              actionLabel="Tambah Barang Pertama"
+              onAction={openCreateDialog}
+            />
           ) : (
             <>
-              <div className="items__table-container">
+              {/* Bulk Actions Bar */}
+              {selectedCount > 0 && (
+                <div className="mb-4 flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <span className="text-sm font-medium">
+                    {selectedCount} item terpilih
+                  </span>
+                  <div className="flex gap-2">
+                    <Button variant="destructive" size="sm" onClick={handleBulkDelete} disabled={bulkDeleteMutation.isPending}>
+                      {bulkDeleteMutation.isPending ? 'Menghapus...' : 'Hapus Terpilih'}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExport} disabled={exportMutation.isPending}>
+                      {exportMutation.isPending ? 'Mengekspor...' : 'Ekspor CSV'}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={clearSelection}>
+                      Batal
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <div className="items__table-container" ref={tableRef} tabIndex={0}>
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="items__table-cell items__table-cell--select w-12">
+                        <input
+                          type="checkbox"
+                          checked={selectedCount === items.length && items.length > 0}
+                          onChange={() => toggleAll(items.map(i => i.id))}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          aria-label="Pilih semua"
+                        />
+                      </TableHead>
                       <TableHead className="items__table-cell items__table-cell--index">#{' '}</TableHead>
                       <TableHead className="items__table-cell items__table-cell--code">Kode</TableHead>
                       <TableHead className="items__table-cell items__table-cell--name">Nama Barang</TableHead>
@@ -325,8 +392,35 @@ export default function ItemsPage() {
                       const status = getStockStatus(item);
                       const globalIndex =
                         (pagination.page - 1) * pagination.limit + index + 1;
+                      const rowSelected = isSelected(item.id);
                       return (
-                        <TableRow key={item.id} className="items__table-row">
+                        <TableRow
+                          key={item.id}
+                          className={cn("items__table-row", rowSelected && "bg-primary/5")}
+                          data-selected={rowSelected}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              toggleRow(item.id);
+                            }
+                          }}
+                          onClick={(e) => {
+                            // Don't toggle selection if clicking on dropdown or interactive elements
+                            if (!(e.target as HTMLElement).closest('[role="menu"], button, input, a')) {
+                              toggleRow(item.id);
+                            }
+                          }}
+                        >
+                          <TableCell className="items__table-cell items__table-cell--select">
+                            <input
+                              type="checkbox"
+                              checked={rowSelected}
+                              onChange={() => toggleRow(item.id)}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                              aria-label={`Pilih ${item.name}`}
+                            />
+                          </TableCell>
                           <TableCell className="items__table-cell items__table-cell--index">
                             {globalIndex}
                           </TableCell>
@@ -371,14 +465,20 @@ export default function ItemsPage() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem
-                                  onClick={() => openEditDialog(item)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditDialog(item);
+                                  }}
                                 >
                                   <Edit className="items__dropdown-icon" />
                                   Edit
                                 </DropdownMenuItem>
                                 {item.isActive && (
                                   <DropdownMenuItem
-                                    onClick={() => setDeleteConfirm(item.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteConfirm(item.id);
+                                    }}
                                     className="items__dropdown-item--danger items__dropdown-item--danger-text"
                                   >
                                     <Trash2 className="items__dropdown-icon" />
@@ -395,7 +495,7 @@ export default function ItemsPage() {
                   <TableFooter>
                     <TableRow>
                       <TableCell
-                        colSpan={8}
+                        colSpan={9}
                         className="flex items-center justify-between"
                       >
                         <div className="text-sm text-gray-500">
@@ -403,34 +503,41 @@ export default function ItemsPage() {
                           {(pagination.page - 1) * pagination.limit + 1} -{" "}
                           {Math.min(
                             pagination.page * pagination.limit,
-                            pagination.total,
+                            paginationData?.total ?? pagination.total,
                           )}{" "}
-                          dari {pagination.total}
+                          dari {paginationData?.total ?? pagination.total}
                         </div>
                         <div className="flex items-center space-x-2">
+                          <Select
+                            value={pagination.limit.toString()}
+                            onValueChange={(v) => handleLimitChange(parseInt(v))}
+                          >
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="10">10 per halaman</SelectItem>
+                              <SelectItem value="25">25 per halaman</SelectItem>
+                              <SelectItem value="50">50 per halaman</SelectItem>
+                              <SelectItem value="100">100 per halaman</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                              setPagination({
-                                ...pagination,
-                                page: pagination.page - 1,
-                              })
-                            }
+                            onClick={() => handlePageChange(pagination.page - 1)}
                             disabled={pagination.page === 1}
                           >
                             Sebelumnya
                           </Button>
+                          <span className="items__page-indicator">
+                            Halaman {pagination.page} dari {paginationData?.totalPages ?? pagination.totalPages}
+                          </span>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                              setPagination({
-                                ...pagination,
-                                page: pagination.page + 1,
-                              })
-                            }
-                            disabled={pagination.page === pagination.totalPages}
+                            onClick={() => handlePageChange(pagination.page + 1)}
+                            disabled={pagination.page >= (paginationData?.totalPages ?? pagination.totalPages)}
                           >
                             Selanjutnya
                           </Button>
@@ -446,7 +553,7 @@ export default function ItemsPage() {
       </Card>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
@@ -561,8 +668,8 @@ export default function ItemsPage() {
               >
                 Batal
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                {(createMutation.isPending || updateMutation.isPending) ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Menyimpan...
@@ -577,13 +684,12 @@ export default function ItemsPage() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-     <Dialog
-  open={!!deleteConfirm}
-  onOpenChange={(open: boolean) =>
-    !open && setDeleteConfirm(null)
-  }
->
-
+      <Dialog
+        open={!!deleteConfirm}
+        onOpenChange={(open: boolean) =>
+          !open && setDeleteConfirm(null)
+        }
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Hapus Barang</DialogTitle>

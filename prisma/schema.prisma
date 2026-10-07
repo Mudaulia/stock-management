@@ -66,6 +66,7 @@ model Item {
 
   @@index([code])
   @@index([name])
+  @@index([isActive, currentStock, minStock])
   @@map("items")
 }
 

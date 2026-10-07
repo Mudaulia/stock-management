@@ -7,15 +7,15 @@ import { verifyCSRF } from '@/lib/csrf'
 
 export const dynamic = 'force-dynamic'
 
-const stockInCreateSchema = z.object({
+const stockAdjustmentCreateSchema = z.object({
   itemId: z.string().cuid('ID barang tidak valid'),
-  quantity: z.number().int().positive('Jumlah harus lebih dari 0'),
+  quantity: z.number().int().refine(val => val !== 0, 'Jumlah tidak boleh nol'),
   reference: z.string().max(100).optional(),
-  notes: z.string().optional(),
+  notes: z.string().min(1, 'Catatan wajib diisi untuk penyesuaian manual'),
   transactionDate: z.string().datetime().optional(),
 })
 
-const stockInQuerySchema = z.object({
+const stockAdjustmentQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
   itemId: z.string().optional(),
@@ -25,6 +25,20 @@ const stockInQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 })
 
+class StockConcurrencyError extends Error {
+  constructor() {
+    super('Stok sudah berubah oleh proses lain. Silakan coba lagi.')
+    this.name = 'StockConcurrencyError'
+  }
+}
+
+class StockUnavailableError extends Error {
+  constructor() {
+    super('Stok tidak mencukupi untuk penyesuaian negatif.')
+    this.name = 'StockUnavailableError'
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser()
@@ -33,9 +47,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const query = stockInQuerySchema.parse(Object.fromEntries(searchParams))
+    const query = stockAdjustmentQuerySchema.parse(Object.fromEntries(searchParams))
 
-    const where: any = { type: 'STOCK_IN' }
+    const where: any = { type: 'ADJUSTMENT' }
 
     if (query.itemId) where.itemId = query.itemId
     if (query.startDate || query.endDate) {
@@ -71,13 +85,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-class StockConcurrencyError extends Error {
-  constructor() {
-    super('Stok sudah berubah oleh proses lain. Silakan coba lagi.')
-    this.name = 'StockConcurrencyError'
-  }
-}
-
 export async function POST(request: NextRequest) {
   // CSRF protection
   const csrfResult = await verifyCSRF(request)
@@ -92,12 +99,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const data = stockInCreateSchema.parse(body)
+    const data = stockAdjustmentCreateSchema.parse(body)
 
     // Verify item exists and is active
     const item = await prisma.item.findUnique({ where: { id: data.itemId } })
     if (!item || !item.isActive) {
       return NextResponse.json({ message: 'Barang tidak ditemukan atau nonaktif' }, { status: 404 })
+    }
+
+    // For negative adjustments, check stock availability
+    if (data.quantity < 0 && item.currentStock < Math.abs(data.quantity)) {
+      return NextResponse.json(
+        { message: `Stok tidak mencukupi. Stok tersedia: ${item.currentStock}` },
+        { status: 400 }
+      )
     }
 
     // Use transaction to ensure consistency with concurrency protection
@@ -106,8 +121,8 @@ export async function POST(request: NextRequest) {
       const transaction = await tx.stockTransaction.create({
         data: {
           itemId: data.itemId,
-          type: 'STOCK_IN',
-          quantity: data.quantity,
+          type: 'ADJUSTMENT',
+          quantity: Math.abs(data.quantity), // Store as positive, sign indicates direction
           reference: data.reference,
           notes: data.notes,
           transactionDate: data.transactionDate ? new Date(data.transactionDate) : new Date(),
@@ -119,17 +134,21 @@ export async function POST(request: NextRequest) {
       })
 
       // Update item current stock with concurrency protection
-      // Uses optimistic locking: only update if currentStock matches expected value
+      const expectedStock = item.currentStock
+      const newStock = expectedStock + data.quantity
+
+      if (newStock < 0) {
+        throw new StockUnavailableError()
+      }
+
       const stockUpdate = await tx.item.updateMany({
         where: {
           id: data.itemId,
           isActive: true,
-          currentStock: item.currentStock, // Expected current stock value
+          currentStock: expectedStock,
         },
         data: {
-          currentStock: {
-            increment: data.quantity,
-          },
+          currentStock: newStock,
         },
       })
 
@@ -144,7 +163,10 @@ export async function POST(request: NextRequest) {
           action: 'CREATE',
           entity: 'STOCK_TRANSACTION',
           entityId: transaction.id,
-          newData: transaction,
+          newData: {
+            ...transaction,
+            adjustmentDirection: data.quantity > 0 ? 'INCREASE' : 'DECREASE',
+          },
         },
       })
 

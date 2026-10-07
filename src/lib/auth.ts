@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { prisma } from './prisma'
+import { generateCSRFToken } from './csrf'
 
 const JWT_EXPIRY = '7d'
 const AUTH_COOKIE_NAME = 'auth-token'
@@ -99,7 +100,7 @@ export async function getSession(): Promise<JWTPayload | null> {
   return verifyToken(token)
 }
 
-export async function setSession(payload: JWTPayload): Promise<void> {
+export async function setSession(payload: JWTPayload): Promise<string> {
   const token = await createToken(payload)
   const cookieStore = await cookies()
 
@@ -110,11 +111,24 @@ export async function setSession(payload: JWTPayload): Promise<void> {
     maxAge: 60 * 60 * 24 * 7,
     path: '/',
   })
+
+  // Generate and set CSRF token
+  const csrfToken = await generateCSRFToken(payload.userId)
+  cookieStore.set('csrf-token', csrfToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 60 * 60, // 1 hour
+    path: '/',
+  })
+
+  return csrfToken
 }
 
 export async function clearSession(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.delete(AUTH_COOKIE_NAME)
+  cookieStore.delete('csrf-token')
 }
 
 export async function getCurrentUser() {

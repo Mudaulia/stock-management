@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { AlertTriangle, ExternalLink, Package } from 'lucide-react'
 import Link from 'next/link'
+import { EmptyState, NoData } from '@/components/ui/empty-state'
 
 interface LowStockItem {
   id: string
@@ -68,11 +69,11 @@ export function LowStockAlert({ items, className }: LowStockAlertProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="text-center py-8">
-            <Package className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
-            <p className="text-emerald-700 font-medium">Semua stok dalam kondisi baik</p>
-            <p className="text-sm text-emerald-600 mt-1">Tidak ada barang dengan stok di bawah minimum</p>
-          </div>
+          <NoData
+            title="Semua stok dalam kondisi baik"
+            description="Tidak ada barang dengan stok di bawah minimum"
+            icon={<Package className="h-12 w-12 text-emerald-400" />}
+          />
         </CardContent>
       </Card>
     )

@@ -37,6 +37,16 @@ export type { TableWrapperProps } from "./table-wrapper"
 export { LoadingState, LoadingSpinner } from "./loading-state"
 export type { LoadingStateProps } from "./loading-state"
 
+export {
+  Skeleton,
+  SkeletonText,
+  SkeletonTable,
+  SkeletonTableRow,
+  SkeletonCard,
+  SkeletonStatCard,
+} from "./skeleton"
+export type { } from "./skeleton"
+
 export { ErrorState } from "./error-state"
 export type { ErrorStateProps } from "./error-state"
 

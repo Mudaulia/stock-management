@@ -141,3 +141,41 @@ export const mutationSummarySchema = z.record(
     transactionCount: z.number().int(),
   })
 )
+
+// ─── Report Item Schemas ─────────────────────────────────────────────────
+
+export const stockReportItemSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  unit: z.string(),
+  currentStock: z.number().int(),
+  minStock: z.number().int(),
+  stockPercentage: z.number(),
+  stockStatus: z.enum(['NORMAL', 'LOW_STOCK', 'OUT_OF_STOCK']),
+  isActive: z.boolean(),
+})
+
+export const lowStockReportItemSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  unit: z.string(),
+  currentStock: z.number().int(),
+  minStock: z.number().int(),
+  shortage: z.number().int(),
+  stockPercentage: z.number(),
+  stockStatus: z.enum(['LOW_STOCK', 'OUT_OF_STOCK']),
+})
+
+export const mutationReportItemSchema = z.object({
+  id: z.string(),
+  itemId: z.string(),
+  type: transactionTypeSchema,
+  quantity: z.number().int(),
+  reference: z.string().nullable(),
+  notes: z.string().nullable(),
+  transactionDate: z.string().datetime(),
+  item: transactionItemSchema,
+  createdBy: transactionUserSchema,
+})

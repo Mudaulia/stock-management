@@ -14,6 +14,8 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Package, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import { EmptyState, NoData } from '@/components/ui/empty-state'
+import { format } from 'date-fns'
 
 interface Transaction {
   id: string
@@ -54,16 +56,9 @@ function QuantityCell({ quantity, type }: { quantity: number; type: Transaction[
 }
 
 function DateCell({ date }: { date: Date | string }) {
-  const d = new Date(date)
   return (
     <span className="text-sm text-muted-foreground whitespace-nowrap">
-      {d.toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })}
+      {format(new Date(date), 'dd MMM yyyy HH:mm')}
     </span>
   )
 }
@@ -71,16 +66,12 @@ function DateCell({ date }: { date: Date | string }) {
 export function RecentTransactionsTable({ transactions, className }: RecentTransactionsTableProps) {
   if (transactions.length === 0) {
     return (
-      <div className={cn('rounded-lg border bg-card p-8 text-center', className)}>
-        <Package className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
-        <p className="text-muted-foreground">Belum ada transaksi</p>
-        <Link href="/dashboard/stock-in" className="mt-4 inline-block">
-          <button className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
-            <span>Buat Transaksi Pertama</span>
-            <ExternalLink className="h-3.5 w-3.5" />
-          </button>
-        </Link>
-      </div>
+      <NoData
+        title="Belum ada transaksi"
+        description="Mulai catat pergerakan stok dengan membuat transaksi pertama."
+        actionLabel="Buat Transaksi Pertama"
+        onAction={() => window.location.href = '/dashboard/stock-in'}
+      />
     )
   }
 
