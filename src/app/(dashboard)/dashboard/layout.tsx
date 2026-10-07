@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
-import { Sidebar, Topbar } from './sidebar'
+import { Sidebar } from './sidebar'
 import { DashboardProvider } from './dashboard-context'
 import { useAuth } from '@/hooks/use-auth'
 import { QueryProvider } from '@/lib/query-provider'
@@ -41,7 +41,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="min-h-screen bg-gray-50">
           <Sidebar userRole={userRole} userName={userName} userEmail={userEmail} />
           <div className="lg:pl-64">
-            <Topbar userRole={userRole} userName={userName} userEmail={userEmail} />
             <main className="p-4 sm:p-6 lg:p-8">{children}</main>
           </div>
         </div>
