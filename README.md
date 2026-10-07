@@ -1,6 +1,6 @@
 # Sistem Manajemen Stok Sparepart
 
-Aplikasi manajemen persediaan sparepart berbasis web menggunakan **Next.js 14**, **Prisma ORM**, **MySQL**, dan **Tailwind CSS**.
+Aplikasi manajemen persediaan sparepart berbasis web menggunakan **Next.js 14**, **Prisma ORM**, **MySQL**, dan **React** dengan **Tailwind CSS**, **Shadcn/UI**, preset  **Nova**.
 
 ## 🚀 Fitur Utama
 
