@@ -53,7 +53,7 @@ export function setCSRFTokenCookie(response: NextResponse, token: string): void 
   response.cookies.set(CSRF_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     maxAge: 60 * 60, // 1 hour
     path: '/',
   })
@@ -63,7 +63,7 @@ export function clearCSRFTokenCookie(response: NextResponse): void {
   response.cookies.set(CSRF_COOKIE_NAME, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     maxAge: 0,
     path: '/',
   })

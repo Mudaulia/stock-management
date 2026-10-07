@@ -117,7 +117,7 @@ export async function setSession(payload: JWTPayload): Promise<string> {
   cookieStore.set('csrf-token', csrfToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     maxAge: 60 * 60, // 1 hour
     path: '/',
   })

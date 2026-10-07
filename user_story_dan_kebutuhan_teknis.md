@@ -253,16 +253,69 @@
 
 ---
 
-## Technical Requirements (Kebutuhan Teknis)
+# Technical Requirements
 
-> **Catatan:** Bagian teknis dipisahkan dari *User Story* utama sebagai *Technical Requirement* atau *Technical Task* agar *backlog* tetap fokus pada nilai bisnis dan mudah dipahami.
+## TR-01 — Frontend
 
-| Kode | Kategori | Deskripsi / Detail Implementasi |
-| :--- | :--- | :--- |
-| **TR-01** | **Frontend** | - Menggunakan Next.js.<br>- Menggunakan HTML, CSS, dan JavaScript.<br>- Mengimplementasikan *wireframe* dan *mockup* menjadi halaman web interaktif.<br>- Membuat desain responsif.<br>- Membuat komponen UI yang dapat digunakan kembali. |
-| **TR-02** | **Backend** | - Menggunakan Next.js sebagai *framework* aplikasi.<br>- Menyediakan API atau *server-side logic* untuk pengelolaan data.<br>- Menerapkan validasi *input*.<br>- Menerapkan autentikasi dan otorisasi pengguna. |
-| **TR-03** | **Database** | - Menggunakan MySQL sebagai *database*.<br>- Menggunakan ORM atau *database access layer* yang kompatibel dengan Next.js.<br>- Menyediakan relasi antara data pengguna, barang, transaksi stok, dan stok opname.<br>- Menerapkan validasi dan *constraint* pada *database*. |
-| **TR-04** | **Keamanan** | - *Password* pengguna harus disimpan dalam bentuk *hash*.<br>- Hak akses harus diperiksa pada *server*.<br>- *Input* pengguna harus divalidasi.<br>- Sistem harus mencegah pengguna mengakses data atau fitur yang tidak memiliki izin. |
+### Teknologi
+- **Framework:** Next.js dengan **App Router**.
+- **Bahasa:** JavaScript/TypeScript.
+- **Styling:** HTML, CSS/Tailwind CSS.
+
+### Implementasi
+- Menggunakan **Next.js (App Router)** sebagai framework dasar aplikasi.
+- Membuat komponen UI yang **responsif dan interaktif** menggunakan **Client Components**.
+- Menggunakan **Zod** untuk validasi skema form secara real-time di sisi client sebelum data dikirim ke server.
+- Mengintegrasikan **Zod** dengan form management library seperti **React Hook Form** untuk menangani `error state` pada tampilan secara dinamis.
+
+---
+
+## TR-02 — Backend
+
+### Teknologi
+- **API:** Next.js API Routes atau Next.js Server Actions.
+- **Validation:** Zod.
+
+### Implementasi
+- Menyediakan **API Routes** atau **Next.js Server Actions** untuk menangani:
+  - Logika bisnis.
+  - Manipulasi data.
+- Menerapkan **Isomorphic Validation**, yaitu menggunakan skema **Zod yang sama dengan frontend** untuk memvalidasi ulang seluruh data yang masuk di sisi server sebelum dieksekusi.
+- Menangani pengembalian format error **Zod (`ZodError`)** secara konsisten dari server agar dapat diterjemahkan dengan baik oleh komponen UI.
+
+---
+
+## TR-03 — Database & ORM
+
+### Teknologi
+- **Database:** MySQL.
+- **ORM:** Prisma ORM.
+- **Database Access Layer:** Prisma Client.
+
+### Implementasi
+- Menggunakan **MySQL** sebagai sistem manajemen database utama.
+- Menggunakan **Prisma ORM** sebagai database access layer.
+- Mengonfigurasi Prisma menggunakan pola **Singleton** untuk mencegah kebocoran connection pool di lingkungan Next.js.
+- Menyusun skema relasi data yang ketat melalui `schema.prisma` untuk entitas:
+  - Pengguna.
+  - Barang.
+  - Transaksi Stok.
+  - Stok Opname.
+- Memanfaatkan **Prisma Client** untuk menjamin keamanan tipe data (**type-safety**) yang mengalir ke seluruh aplikasi.
+
+---
+
+## TR-04 — Keamanan
+
+### Implementasi
+- Mengamankan variabel lingkungan database, khususnya `DATABASE_URL`, di sisi server dan memastikan variabel tersebut **tidak terekspos ke browser/client**.
+- Melakukan **enkripsi/hashing password pengguna** menggunakan algoritma yang kuat seperti:
+  - `bcrypt`
+  - `argon2`
+- Proses hashing password harus dilakukan di **sisi server** sebelum password disimpan melalui Prisma ke MySQL.
+- Mengimplementasikan proteksi hak akses pengguna (**Authorization**) pada dua level:
+  1. **Level navigasi** — menggunakan Next.js Middleware.
+  2. **Level eksekusi data** — menggunakan Server Actions atau API Routes.
 
 ---
 
