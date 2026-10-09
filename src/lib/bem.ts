@@ -8,7 +8,11 @@ export function bem(block: string) {
       }
       
       if (modifier) {
-        classes.push(`${block}__${element}--${modifier}`)
+        if (element) {
+          classes.push(`${block}__${element}--${modifier}`)
+        } else {
+          classes.push(`${block}--${modifier}`)
+        }
       }
       
       return classes.join(' ')
