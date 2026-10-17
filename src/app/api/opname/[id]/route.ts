@@ -188,10 +188,18 @@ export async function DELETE(
       )
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.stockOpname.update({
+    const updatedOpname = await prisma.$transaction(async (tx) => {
+      const updated = await tx.stockOpname.update({
         where: { id },
         data: { status: 'CANCELLED' },
+        include: {
+          item: {
+            select: { id: true, code: true, name: true, unit: true, currentStock: true },
+          },
+          createdBy: {
+            select: { id: true, username: true, fullName: true },
+          },
+        },
       })
 
       // Audit log
@@ -205,9 +213,11 @@ export async function DELETE(
           newData: { status: 'CANCELLED' },
         },
       })
+
+      return updated
     })
 
-    return NextResponse.json({ message: 'Opname dibatalkan' })
+    return NextResponse.json(successResponse(updatedOpname))
   } catch (error) {
     return handleApiError(error)
   }

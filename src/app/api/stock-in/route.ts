@@ -115,6 +115,7 @@ export async function POST(request: NextRequest) {
         },
         include: {
           item: { select: { id: true, code: true, name: true, unit: true } },
+          createdBy: { select: { id: true, username: true, fullName: true } },
         },
       })
 

@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
         data: {
           itemId: data.itemId,
           type: 'ADJUSTMENT',
-          quantity: Math.abs(data.quantity), // Store as positive, sign indicates direction
+          quantity: data.quantity, // Store signed value: positive = increase, negative = decrease
           reference: data.reference,
           notes: data.notes,
           transactionDate: data.transactionDate ? new Date(data.transactionDate) : new Date(),
@@ -130,6 +130,7 @@ export async function POST(request: NextRequest) {
         },
         include: {
           item: { select: { id: true, code: true, name: true, unit: true } },
+          createdBy: { select: { id: true, username: true, fullName: true } },
         },
       })
 
