@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 import { handleApiError, successResponse } from '@/lib/api-response'
+import { verifyCSRF } from '@/lib/csrf'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,6 +89,12 @@ export async function PUT(
         { message: 'Forbidden' },
         { status: 403 }
       )
+    }
+
+    // CSRF protection
+    const csrfResult = await verifyCSRF(request)
+    if (!csrfResult.valid) {
+      return csrfResult.response!
     }
 
     const { id } = await params
@@ -188,6 +195,12 @@ export async function DELETE(
         { message: 'Forbidden' },
         { status: 403 }
       )
+    }
+
+    // CSRF protection
+    const csrfResult = await verifyCSRF(request)
+    if (!csrfResult.valid) {
+      return csrfResult.response!
     }
 
     const { id } = await params

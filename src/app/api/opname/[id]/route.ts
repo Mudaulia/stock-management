@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { handleApiError, successResponse } from '@/lib/api-response'
+import { verifyCSRF } from '@/lib/csrf'
 
 export const dynamic = 'force-dynamic'
 
@@ -162,6 +163,12 @@ export async function DELETE(
     // Role check: Only ADMIN and WAREHOUSE_STAFF can cancel opname
     if (user.role !== 'ADMIN' && user.role !== 'WAREHOUSE_STAFF') {
       return NextResponse.json({ message: 'Forbidden: Insufficient permissions' }, { status: 403 })
+    }
+
+    // CSRF protection
+    const csrfResult = await verifyCSRF(request)
+    if (!csrfResult.valid) {
+      return csrfResult.response!
     }
 
     const { id } = await params
