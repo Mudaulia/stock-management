@@ -9,6 +9,8 @@
 5. [Input Validation](#5-input-validation)
 6. [API Contract](#6-api-contract)
 7. [API Routes Reference](#7-api-routes-reference)
+   - [7.2. Pola Route dengan Parameter](#72-pola-route-dengan-parameter)
+   - [7.3. Best Practices Penulisan API di Next.js](#73-best-practices-penulisan-api-di-nextjs)
 8. [Data Models](#8-data-models)
 9. [Error Handling](#9-error-handling)
 10. [Pagination Convention](#10-pagination-convention)
@@ -58,14 +60,35 @@ Response (JSON)
 src/
 ├── app/
 │   ├── api/
-│   │   ├── auth/          # Login, Logout, Me
-│   │   ├── dashboard/     # Stats, Low Stock, Recent Transactions
-│   │   ├── items/         # CRUD Items + Export
-│   │   ├── opname/        # Stock Opname CRUD
-│   │   ├── reports/       # Low Stock, Mutation, Stock Reports
-│   │   ├── stock-adjustment/  # Adjustment Transactions
-│   │   ├── stock-in/      # Stock In Transactions
-│   │   └── stock-out/     # Stock Out Transactions
+│   │   ├── auth/
+│   │   │   ├── login/route.ts      # POST: Authenticate user
+│   │   │   ├── logout/route.ts     # POST: Destroy session
+│   │   │   └── me/route.ts         # GET: Current user profile
+│   │   ├── dashboard/
+│   │   │   ├── stats/route.ts      # GET: Dashboard statistics
+│   │   │   ├── low-stock-items/route.ts
+│   │   │   └── recent-transactions/route.ts
+│   │   ├── items/
+│   │   │   ├── route.ts            # GET: List items, POST: Create item
+│   │   │   ├── [id]/
+│   │   │   │   └── route.ts        # GET: Get item, PUT: Update item, DELETE: Soft delete
+│   │   │   └── export/route.ts     # GET: Export items to CSV
+│   │   ├── opname/
+│   │   │   ├── route.ts            # GET: List opnames, POST: Create opname
+│   │   │   └── [id]/
+│   │   │       └── route.ts        # PUT: Update opname, DELETE: Cancel opname
+│   │   ├── opname/[id]/reconcile/
+│   │   │   └── route.ts            # POST: Reconcile opname
+│   │   ├── reports/
+│   │   │   ├── stock/route.ts
+│   │   │   ├── stock/export/route.ts
+│   │   │   ├── low-stock/route.ts
+│   │   │   ├── low-stock/export/route.ts
+│   │   │   ├── mutation/route.ts
+│   │   │   └── mutation/export/route.ts
+│   │   ├── stock-adjustment/route.ts      # GET: List adjustments, POST: Create adjustment
+│   │   ├── stock-in/route.ts              # GET: List stock-ins, POST: Create stock-in
+│   │   └── stock-out/route.ts             # GET: List stock-outs, POST: Create stock-out
 │   ├── (auth)/login/      # Login page
 │   └── (dashboard)/       # Dashboard layout
 ├── lib/
@@ -77,6 +100,81 @@ src/
 │   ├── schemas.ts         # Zod schemas for frontend validation
 │   └── fetch-utils.ts     # fetchWithZod, fetchPaginated helpers
 └── middleware.ts          # Next.js middleware (auth redirect, header injection)
+```
+
+### API Route Pattern (App Router)
+
+Semua API endpoint mengikuti pola Next.js App Router dengan file `route.ts`:
+
+```typescript
+// src/app/api/items/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/auth'
+import { handleApiError, successResponse, paginatedResponse } from '@/lib/api-response'
+
+// GET: Mengambil daftar items
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+    }
+    // ... business logic
+    return NextResponse.json(successResponse(data))
+  } catch (error) {
+    return handleApiError(error)
+  }
+}
+
+// POST: Membuat item baru
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getCurrentUser()
+    if (!user || user.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 })
+    }
+    // ... business logic
+    return NextResponse.json(successResponse(newItem), { status: 201 })
+  } catch (error) {
+    return handleApiError(error)
+  }
+}
+```
+
+```typescript
+// src/app/api/items/[id]/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+// GET: Ambil detail item berdasarkan ID
+export async function GET(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  const { id } = await params
+  // ... business logic
+}
+
+// PUT: Perbarui item
+export async function PUT(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  const { id } = await params
+  // ... business logic
+}
+
+// DELETE: Hapus item (soft delete)
+export async function DELETE(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  const { id } = await params
+  // ... business logic
+}
 ```
 
 ---
@@ -1206,6 +1304,143 @@ Returns most recent 5 transactions across all types.
 **Response** (200):
 - Content-Type: `text/csv; charset=utf-8`
 - Content-Disposition: `attachment; filename="mutation-report-export-YYYY-MM-DD.csv"`
+
+---
+
+### 7.2. Pola Route dengan Parameter
+
+Untuk endpoint dengan parameter path (seperti `[id]`), Next.js App Router menggunakan objek `params` yang di-*await*. Pola yang digunakan dalam project ini adalah inline type:
+
+```typescript
+// src/app/api/items/[id]/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  // ...
+}
+```
+
+Alternatif dengan interface (jika preferensi tim):
+
+```typescript
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: RouteParams
+) {
+  const { id } = await params
+  // ...
+}
+```
+
+Untuk endpoint nested (seperti `opname/[id]/reconcile`), struktur folder sama dengan `[id]/`:
+
+```text
+src/app/api/
+└── opname/
+    └── [id]/
+        ├── route.ts          # PUT, DELETE
+        └── reconcile/
+            └── route.ts      # POST
+```
+
+---
+
+### 7.3. Best Practices Penulisan API di Next.js
+
+Berikut adalah best practices yang harus diikuti saat menulis API route di Next.js App Router:
+
+#### 1. Gunakan HTTP Status Code yang Benar
+
+| Status Code | Penggunaan |
+|-------------|------------|
+| `200` | Success (GET, PUT, DELETE) |
+| `201` | Created (POST berhasil) |
+| `400` | Bad Request (validasi gagal, business logic error) |
+| `401` | Unauthorized (tidak ada/invalid session) |
+| `403` | Forbidden (role tidak cukup) |
+| `404` | Not Found (resource tidak ditemukan) |
+| `429` | Too Many Requests (rate limit exceeded) |
+| `500` | Internal Server Error |
+
+```typescript
+// ✅ Good: Gunakan status code yang sesuai
+return NextResponse.json(successResponse(data), { status: 201 })
+return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+return NextResponse.json({ message: 'Validasi gagal' }, { status: 400 })
+```
+
+#### 2. Gunakan Zod untuk Validasi Input
+
+Selalu validasi request body dan query parameters menggunakan Zod sebelum memproses data:
+
+```typescript
+import { z } from 'zod'
+
+const createSchema = z.object({
+  itemId: z.string().cuid(),
+  quantity: z.number().int().positive(),
+  reference: z.string().max(100).optional(),
+})
+
+export async function POST(request: NextRequest) {
+  const body = await request.json()
+  const parsed = createSchema.parse(body) // throws on invalid input
+  // ... proceed with parsed data
+}
+```
+
+#### 3. Gunakan Try-Catch untuk Error Handling
+
+Selalu bungkus logika bisnis dalam try-catch dan gunakan `handleApiError` untuk response yang konsisten:
+
+```typescript
+import { handleApiError } from '@/lib/api-response'
+
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+    // ... business logic
+    return NextResponse.json(successResponse(data))
+  } catch (error) {
+    return handleApiError(error)
+  }
+}
+```
+
+#### 4. Security: Middleware, JWT, dan Auth
+
+- Gunakan middleware untuk proteksi route global
+- Verifikasi JWT di setiap route yang membutuhkan auth
+- Gunakan CSRF token untuk semua mutation (POST/PUT/DELETE)
+- Jangan pernah trust client-side role atau ownership
+
+```typescript
+// middleware.ts
+import { getCurrentUser } from '@/lib/auth'
+
+export async function middleware(request: NextRequest) {
+  const user = await getCurrentUser(request)
+  if (!user && !isPublicRoute(request.nextUrl.pathname)) {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+  }
+  // Inject user into headers for server components
+  const response = NextResponse.next()
+  response.headers.set('x-user-id', user.id)
+  response.headers.set('x-user-role', user.role)
+  return response
+}
+```
 
 ---
 
