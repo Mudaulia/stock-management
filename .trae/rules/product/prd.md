@@ -158,8 +158,8 @@ Hierarki peran: `ADMIN > WAREHOUSE_STAFF > VIEWER`. Authorization ditegakkan di 
 | `.trae/rules/backend/security.md` | Kebijakan keamanan & RBAC |
 | `.trae/rules/backend/inventory-rules.md` | Aturan bisnis inventory |
 | `.trae/rules/backend/api-standards.md` | Spesifikasi API |
-| `.trae/rules/development/development.md` | Setup & workflow pengembangan |
-| `.trae/rules/testing/test-standards.md` | Strategi pengujian & verifikasi |
+| `.trae/skills/dev-workflow/SKILL.md` | Setup & workflow pengembangan (skill) |
+| `.trae/skills/test-verification/SKILL.md` | Strategi pengujian & verifikasi (skill) |
 | `.trae/rules/database/database-safety.md` | Prosedur keselamatan database |
 
 ---

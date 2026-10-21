@@ -18,8 +18,9 @@ Dokumentasi project telah dimigrasikan ke **`.trae/rules/`** (project rules TRAE
 | `.trae/rules/frontend/ui-guidelines.md` | mengembangkan komponen UI & styling |
 | `.trae/rules/backend/inventory-rules.md` | mengubah inventory/stock |
 | `.trae/rules/backend/security.md` | mengubah auth/RBAC/security |
-| `.trae/rules/development/development.md` | setup dan development workflow |
-| `.trae/rules/testing/test-standards.md` | testing dan verification |
+| `.trae/skills/dev-workflow/SKILL.md` | setup & workflow development (skill — aktifkan manual) |
+| `.trae/skills/test-verification/SKILL.md` | testing & verification (skill — aktifkan manual) |
+| `.trae/skills/api-nextjs-reference/SKILL.md` | referensi penulisan API Next.js (skill — aktifkan manual) |
 | `.trae/rules/database/database-safety.md` | Prisma/database/migration |
 
 ## Yang Tetap di `docs/`

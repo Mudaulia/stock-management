@@ -1,6 +1,6 @@
 ---
-description: Standar pengujian — strategi, skenario, verification workflow
-alwaysApply: false
+name: test-verification
+description: Prosedur verifikasi & testing project Stock Management: baseline checks (prisma validate, tsc, build), database verification, manual verification, regression testing. Aktifkan saat perlu memverifikasi perubahan sebelum task dinyatakan selesai.
 ---
 
 # Testing and Verification

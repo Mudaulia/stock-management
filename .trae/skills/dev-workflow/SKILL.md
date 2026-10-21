@@ -1,6 +1,6 @@
 ---
-description: Panduan pengembangan — setup, konvensi kode, workflow
-alwaysApply: false
+name: dev-workflow
+description: Panduan development workflow Stock Management: install, configuration, dev server, TypeScript, build, dependency changes, git. Aktifkan saat setup environment, menjalankan server, atau mengubah dependency.
 ---
 
 # Development Guide
@@ -46,9 +46,9 @@ Jangan commit secret.
 
 ## Database
 
-Untuk database workflow, baca:
+Untuk database workflow, baca rule:
 
-`.trae/rules/database/database-safety.md`
+`.trae/rules/database/database-safety.md` (rule, bukan skill — selalu berlaku untuk perubahan database)
 
 ## Development Server
 

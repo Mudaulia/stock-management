@@ -1,7 +1,6 @@
 ---
-description: Referensi pola implementasi API Next.js (route handler, middleware, lib)
-globs: src/app/api/**,src/lib/**
-alwaysApply: false
+name: api-nextjs-reference
+description: Referensi & tutorial penulisan REST API Next.js (App Router & Pages Router): struktur route handler, dynamic params, middleware. Aktifkan saat membuat atau mempelajari pola API Next.js baru.
 ---
 
 # Dokumentasi Penulisan API di Next.js (App Router & Pages Router)
