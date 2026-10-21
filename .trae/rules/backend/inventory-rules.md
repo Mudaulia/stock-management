@@ -1,3 +1,8 @@
+---
+description: Aturan inventory — atomicity, optimistic locking, soft delete, audit trail. WAJIB dibaca sebelum mengubah stock calculation, stock transaction, stock opname, reconciliation, atau current stock
+alwaysApply: false
+---
+
 # Inventory Business Rules
 
 ## Purpose

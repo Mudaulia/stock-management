@@ -1,3 +1,9 @@
+---
+description: Standar & panduan UI frontend (Inter, BEM, komponen, form, tabel, toast)
+globs: src/app/**,src/components/**,src/hooks/**
+alwaysApply: false
+---
+
 # AI Development Rules & Project Instructions
 
 ## 1. Core Architecture & Tech Stack

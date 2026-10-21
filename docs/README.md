@@ -1,59 +1,36 @@
-# Project Documentation — Single Source of Truth
+# Documentation — Pointer & Historis
 
-Dokumentasi ini melengkapi `AGENTS.md`.
+Dokumentasi project telah dimigrasikan ke **`.trae/rules/`** (project rules TRAE IDE) agar dimuat otomatis oleh AI sesuai konteks task (frontmatter: `alwaysApply` / `globs` / `description`).
 
-`AGENTS.md` berisi aturan kerja yang selalu berlaku untuk coding agent.
+`AGENTS.md` tetap berisi aturan kerja yang selalu berlaku (workspace rule).
 
-Dokumen di bawah berisi pengetahuan project yang dibaca sesuai kebutuhan task.
+## Peta Rules — `.trae/rules/`
 
-## Documentation Map
+| Rule | Digunakan ketika |
+|------|-----------------|
+| `.trae/rules/product/prd.md` | memahami requirement produk, gap & roadmap |
+| `.trae/rules/product/user-story.md` | memahami user story & acceptance criteria |
+| `.trae/rules/product/erd.md` | memahami data model & relasi entitas |
+| `.trae/rules/architecture/architecture.md` | memahami struktur aplikasi (HLD) |
+| `.trae/rules/architecture/low-level-design.md` | memahami desain detail sistem (LLD/SDD) |
+| `.trae/rules/backend/api-standards.md` | mengubah atau menambah API |
+| `.trae/rules/backend/api-nextjs-reference.md` | referensi pola penulisan API Next.js |
+| `.trae/rules/frontend/ui-guidelines.md` | mengembangkan komponen UI & styling |
+| `.trae/rules/backend/inventory-rules.md` | mengubah inventory/stock |
+| `.trae/rules/backend/security.md` | mengubah auth/RBAC/security |
+| `.trae/rules/development/development.md` | setup dan development workflow |
+| `.trae/rules/testing/test-standards.md` | testing dan verification |
+| `.trae/rules/database/database-safety.md` | Prisma/database/migration |
 
-| Document | Digunakan ketika |
-|----------|-----------------|
-| `product/PRD.md` | memahami requirement produk, fitur as-is, gap & roadmap |
-| `product/USER_STORY.md` | memahami user story & acceptance criteria |
-| `product/ERD.md` | memahami data model & relasi entitas |
-| `architecture/ARCHITECTURE.md` | memahami struktur aplikasi (HLD) |
-| `architecture/LOW-LEVEL-DESIGN.md` | memahami desain detail sistem (LLD/SDD) |
-| `backend/API-DOCUMENTATION.md` | mengubah atau menambah API |
-| `backend/dokumentasi-api-nextjs.md` | referensi pola penulisan API Next.js |
-| `frontend/UI-GUIDELINES.md` | mengembangkan komponen UI & styling |
-| `business/INVENTORY-RULES.md` | mengubah inventory/stock |
-| `security/SECURITY.md` | mengubah auth/RBAC/security |
-| `development/DEVELOPMENT.md` | setup dan development workflow |
-| `development/TESTING.md` | testing dan verification |
-| `operations/DATABASE-SAFETY.md` | Prisma/database/migration |
-| `decisions/` | memahami keputusan arsitektur (ADR) |
-| `audits/` | membaca atau menyimpan hasil audit |
+## Yang Tetap di `docs/`
 
-## Struktur Folder
+Folder ini hanya menyimpan materi historis (bukan rule):
 
-```
-docs/
-├── architecture/   → desain sistem (HLD & LLD)
-├── audits/         → histori hasil audit
-├── backend/        → spesifikasi & dokumentasi API
-├── business/       → aturan bisnis (inventory)
-├── decisions/      → architecture decision records
-├── development/    → workflow development & testing
-├── frontend/       → pedoman UI/UX & komponen
-├── operations/     → operasional (database safety)
-├── product/        → requirement produk (PRD, user story, ERD)
-├── security/       → kebijakan keamanan
-└── README.md       → peta dokumentasi (file ini)
-```
+- `audits/` — laporan audit (source of truth status temuan)
+- `decisions/` — architecture decision records (ADR)
+- `README.md` — pointer ini
 
-Setiap dokumen ditempatkan pada folder sesuai fungsinya. Jika menambah dokumentasi baru, gunakan folder yang sesuai — jangan menaruh file di root `docs/`.
-
-## Core Requirement Documents
-
-Requirement utama berada di `docs/product/`:
-
-- `docs/product/ERD.md`
-- `docs/product/USER_STORY.md`
-- `docs/product/PRD.md` — PRD resmi (requirement, spesifikasi, HLD/LLD summary, gap & roadmap)
-
-Dokumen tersebut harus dibaca ketika task menyentuh business requirement atau data model.
+Jangan menambahkan rule/dokumentasi teknis baru di sini — tempatkan di `.trae/rules/<domain>/` sesuai fungsinya.
 
 ## Important Rule
 

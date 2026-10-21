@@ -1,3 +1,8 @@
+---
+description: Entity Relationship Diagram — model data, relasi, aturan integritas. WAJIB dibaca untuk task yang menyentuh schema/data model
+alwaysApply: false
+---
+
 # Entity Relationship Diagram (ERD) - Sistem Manajemen Stok
 
 ## Mermaid Diagram

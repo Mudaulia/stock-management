@@ -1,3 +1,8 @@
+---
+description: Kebijakan keamanan & RBAC — session, CSRF, rate limit, role enforcement server-side. WAJIB dibaca untuk task authentication/authorization
+alwaysApply: false
+---
+
 # Security Rules
 
 ## Purpose

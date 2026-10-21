@@ -1,3 +1,9 @@
+---
+description: Keselamatan database & Prisma — larangan operasi destruktif, migration rules. WAJIB dibaca sebelum mengubah prisma/schema.prisma atau menjalankan migration
+globs: prisma/**
+alwaysApply: false
+---
+
 # Database Safety
 
 ## Purpose

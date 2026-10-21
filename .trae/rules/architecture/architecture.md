@@ -1,3 +1,8 @@
+---
+description: High-Level Design — arsitektur sistem, modul, alur request, tech stack
+alwaysApply: false
+---
+
 # Architecture
 
 ## Purpose
@@ -8,7 +13,7 @@ Dokumen harus diperbarui ketika terjadi perubahan arsitektur yang signifikan.
 
 Desain detail tingkat rendah (Low-Level Design / System Design Document) berada di:
 
-`docs/architecture/LOW-LEVEL-DESIGN.md`
+`.trae/rules/architecture/low-level-design.md`
 
 ## Source of Truth
 
@@ -77,7 +82,7 @@ MySQL
   - `dashboard` — stats, low-stock-items, recent-transactions;
   - `reports/{stock,mutation,low-stock}` (+ `/export`).
 - **Service layer:** tidak ada layer terpisah; business logic berada langsung di route handlers menggunakan Prisma `$transaction`.
-- **Business logic:** validasi Zod ulang di server, verifikasi sesi & role, lalu mutasi stok atomik dengan optimistic locking (detail di `docs/business/INVENTORY-RULES.md`).
+- **Business logic:** validasi Zod ulang di server, verifikasi sesi & role, lalu mutasi stok atomik dengan optimistic locking (detail di `.trae/rules/backend/inventory-rules.md`).
 - **Authorization:** ditegakkan di server per endpoint — VIEWER baca saja; WAREHOUSE_STAFF untuk transaksi tulis; ADMIN untuk hapus item dan rekonsiliasi.
 - **Error handling:** format response konsisten via `src/lib/api-response.ts` (success / error / validation error / 409 conflict).
 
@@ -85,7 +90,7 @@ MySQL
 
 - **Engine:** MySQL.
 - **ORM:** Prisma (Client singleton di `src/lib/prisma.ts` — mencegah kebocoran connection pool).
-- **Schema:** 6 model — User, Item, StockTransaction, StockOpname, StockReconciliation, AuditLog (detail `prisma/schema.prisma` dan `docs/product/ERD.md`).
+- **Schema:** 6 model — User, Item, StockTransaction, StockOpname, StockReconciliation, AuditLog (detail `prisma/schema.prisma` dan `.trae/rules/product/erd.md`).
 - **Relasi penting:**
   - User 1-N StockTransaction / StockOpname / StockReconciliation / AuditLog;
   - Item 1-N StockTransaction / StockOpname;
@@ -125,7 +130,7 @@ MySQL
 - **Reconciliation:** ADMIN-only; verifikasi stok saat ini masih sama dengan snapshot (`StaleOpnameError` jika stale) sebelum overwrite; hasil tercatat sebagai transaksi ADJUSTMENT + record StockReconciliation.
 - **Audit trail:** AuditLog (action, entity, old/new data, IP, user-agent) ditulis dalam transaksi yang sama dengan mutasi.
 
-Aturan detail inventory: `docs/business/INVENTORY-RULES.md`
+Aturan detail inventory: `.trae/rules/backend/inventory-rules.md`
 
 ## Architecture Changes
 

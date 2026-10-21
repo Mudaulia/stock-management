@@ -1,3 +1,8 @@
+---
+description: Panduan pengembangan — setup, konvensi kode, workflow
+alwaysApply: false
+---
+
 # Development Guide
 
 ## Purpose
@@ -43,7 +48,7 @@ Jangan commit secret.
 
 Untuk database workflow, baca:
 
-`docs/operations/DATABASE-SAFETY.md`
+`.trae/rules/database/database-safety.md`
 
 ## Development Server
 

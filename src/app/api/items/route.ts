@@ -160,7 +160,7 @@ export async function DELETE(request: NextRequest) {
      * Soft delete only — aligns with single-item delete.
      *
      * Stock transactions and stock opnames are permanent history
-     * (see docs/business/INVENTORY-RULES.md) and must never be deleted.
+     * (see .trae/rules/backend/inventory-rules.md) and must never be deleted.
      */
     const deletedCount = await prisma.$transaction(async (tx) => {
       const items = await tx.item.findMany({

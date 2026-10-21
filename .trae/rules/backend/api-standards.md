@@ -1,3 +1,9 @@
+---
+description: Dokumentasi API — kontrak endpoint, RBAC, validasi, response format, audit log
+globs: src/app/api/**
+alwaysApply: false
+---
+
 # Stock Management — Backend Documentation
 
 ## Table of Contents
@@ -684,7 +690,7 @@ See [Authentication & Session](#2-authentication--session) for full details.
 
 > `deletedCount` = jumlah item yang benar-benar dinonaktifkan; `skippedCount` = item dalam `ids` yang sudah nonaktif sebelumnya atau tidak ditemukan.
 
-**Note**: This is a **SOFT DELETE** — sets `isActive` to `false` for all matching items (same semantics as single-item delete). Stock transactions and stock opnames are permanent history (see `docs/business/INVENTORY-RULES.md`) and are never deleted. Audit logs (`DELETE`, entity `ITEM`) are created per item inside a transaction.
+**Note**: This is a **SOFT DELETE** — sets `isActive` to `false` for all matching items (same semantics as single-item delete). Stock transactions and stock opnames are permanent history (see `.trae/rules/backend/inventory-rules.md`) and are never deleted. Audit logs (`DELETE`, entity `ITEM`) are created per item inside a transaction.
 
 ---
 

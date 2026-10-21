@@ -1,3 +1,8 @@
+---
+description: Standar pengujian — strategi, skenario, verification workflow
+alwaysApply: false
+---
+
 # Testing and Verification
 
 ## Purpose

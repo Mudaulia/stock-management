@@ -1,3 +1,9 @@
+---
+description: Referensi pola implementasi API Next.js (route handler, middleware, lib)
+globs: src/app/api/**,src/lib/**
+alwaysApply: false
+---
+
 # Dokumentasi Penulisan API di Next.js (App Router & Pages Router)
 
 Dokumentasi ini menjelaskan standar penulisan **REST API** pada framework [Next.js](https://nextjs.org/) menggunakan dua metode routing yang tersedia: **App Router** (rekomendasi versi terbaru) dan **Pages Router** (versi legacy).

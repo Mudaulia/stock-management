@@ -1,3 +1,8 @@
+---
+description: User Story & kebutuhan fungsional per role
+alwaysApply: false
+---
+
 # User Story & Technical Requirements
 
 ---

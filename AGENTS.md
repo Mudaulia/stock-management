@@ -181,7 +181,7 @@ UI restriction bukan authorization.
 
 Untuk task yang menyentuh authentication atau authorization, baca:
 
-`docs/security/SECURITY.md`
+`.trae/rules/backend/security.md`
 
 Authentication harus diverifikasi secara server-side.
 
@@ -205,7 +205,7 @@ Database adalah critical state.
 
 Untuk perubahan database atau Prisma, baca:
 
-`docs/operations/DATABASE-SAFETY.md`
+`.trae/rules/database/database-safety.md`
 
 Jangan menjalankan operasi destructive tanpa approval eksplisit.
 
@@ -239,7 +239,7 @@ Sebelum mengubah:
 
 baca:
 
-`docs/business/INVENTORY-RULES.md`
+`.trae/rules/backend/inventory-rules.md`
 
 Perubahan inventory harus mempertimbangkan:
 
@@ -255,8 +255,8 @@ Perubahan inventory harus mempertimbangkan:
 
 Sebelum mengubah behavior bisnis, baca:
 
-- `docs/product/ERD.md`
-- `docs/product/USER_STORY.md`
+- `.trae/rules/product/erd.md`
+- `.trae/rules/product/user-story.md`
 
 Jika requirement yang relevan belum jelas, jangan mengarang behavior.
 
