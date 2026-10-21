@@ -12,7 +12,10 @@ const opnameSchema = z.object({
   itemId: z.string().min(1, 'Barang wajib dipilih'),
   physicalStock: z.coerce.number().int().nonnegative('Stok fisik tidak boleh negatif'),
   notes: z.string().optional(),
-  opnameDate: z.string().min(1, 'Tanggal wajib diisi'),
+  opnameDate: z
+    .string()
+    .min(1, 'Tanggal wajib diisi')
+    .refine((val) => !Number.isNaN(new Date(val).getTime()), 'Format tanggal tidak valid'),
 })
 
 const reconcileSchema = z.object({

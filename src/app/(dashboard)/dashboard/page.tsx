@@ -1,7 +1,6 @@
 'use client'
 
 import { StatCards } from './components/StatCards'
-import { ActionButtons } from './components/ActionButtons'
 import { RecentTransactionsTable } from './components/RecentTransactionsTable'
 import { LowStockAlert } from './components/LowStockAlert'
 import { Plus, ArrowUp, ArrowDown, ClipboardCheck } from 'lucide-react'

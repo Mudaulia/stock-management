@@ -59,8 +59,8 @@ MySQL
 
 - **Routing:** Next.js App Router dengan dua route group:
   - `(auth)/login` — halaman login;
-  - `(dashboard)/dashboard/**` — seluruh halaman aplikasi (items, stock-in, stock-out, stock-adjustment, opname, reports/{stock,mutation,low-stock}, dashboard utama).
-- **Layouts:** `(dashboard)/layout.tsx` membungkus sidebar + konten; sidebar berisi 9 menu navigasi.
+  - `(dashboard)/dashboard/**` — seluruh halaman aplikasi (items, stock-in, stock-out, stock-adjustment, opname, reports/{stock,mutation,low-stock}, users, dashboard utama).
+- **Layouts:** `(dashboard)/layout.tsx` membungkus sidebar + konten; sidebar berisi 9 menu inti + menu "Pengguna" khusus ADMIN.
 - **Components:** ~25 komponen UI bersama di `src/components/ui` (tabel, dialog, form, toast, pagination, empty/loading/error state, dsb.) serta komponen dashboard di `dashboard/components`.
 - **Forms:** React Hook Form + resolver Zod; error state dinamis per field.
 - **State management:** server state sepenuhnya via TanStack React Query (`src/hooks/use-api.ts`) dengan query-key factory dan invalidation lintas fitur (mis. transaksi stok masuk me-refresh items, dashboard, transaksi terbaru).

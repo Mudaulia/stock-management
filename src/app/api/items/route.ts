@@ -136,11 +136,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const user = await getCurrentUser()
 
-    if (
-      !user ||
-      (user.role !== 'ADMIN' &&
-        user.role !== 'WAREHOUSE_STAFF')
-    ) {
+    if (!user || user.role !== 'ADMIN') {
       return NextResponse.json(
         { message: 'Forbidden' },
         { status: 403 }

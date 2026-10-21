@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
 import { handleApiError, successResponse } from '@/lib/api-response'
 
 export async function GET() {
   try {
-    const user = await requireAuth()
+    // Auth server-side: role berasal dari DB, bukan token/client.
+    const user = await getCurrentUser()
 
     if (!user) {
       return NextResponse.json(

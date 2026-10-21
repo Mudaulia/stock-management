@@ -88,7 +88,10 @@ src/
 │   │   │   └── mutation/export/route.ts
 │   │   ├── stock-adjustment/route.ts      # GET: List adjustments, POST: Create adjustment
 │   │   ├── stock-in/route.ts              # GET: List stock-ins, POST: Create stock-in
-│   │   └── stock-out/route.ts             # GET: List stock-outs, POST: Create stock-out
+│   │   ├── stock-out/route.ts             # GET: List stock-outs, POST: Create stock-out
+│   │   └── users/
+│   │       ├── route.ts                   # GET: List users, POST: Create user (ADMIN)
+│   │       └── [id]/route.ts              # GET: User detail, PUT: Update user (ADMIN)
 │   ├── (auth)/login/      # Login page
 │   └── (dashboard)/       # Dashboard layout
 ├── lib/
@@ -258,7 +261,7 @@ export async function DELETE(
 ```json
 {
   "data": null,
-  "summary": "Logout berhasil"
+  "summary": { "message": "Logout berhasil" }
 }
 ```
 
@@ -324,11 +327,14 @@ export async function DELETE(
 | GET /api/stock-adjustment | ✅ | ✅ | ✅ |
 | POST /api/opname | ✅ | ✅ | ❌ |
 | GET /api/opname | ✅ | ✅ | ✅ |
+| GET /api/opname/:id | ✅ | ✅ | ✅ |
 | PUT /api/opname/:id | ✅ | ✅ | ❌ |
 | DELETE /api/opname/:id | ✅ | ✅ | ❌ |
 | POST /api/opname/:id/reconcile | ✅ | ❌ | ❌ |
 | GET /api/dashboard/* | ✅ | ✅ | ✅ |
 | GET /api/reports/* | ✅ | ✅ | ✅ |
+| GET/POST /api/users | ✅ | ❌ | ❌ |
+| GET/PUT /api/users/:id | ✅ | ❌ | ❌ |
 
 ### Auth Helpers
 
@@ -531,7 +537,7 @@ See [Authentication & Session](#2-authentication--session) for full details.
 | Param | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | page | number | No | 1 | Page number |
-| limit | number | No | 10 | Items per page (max 100) |
+| limit | number | No | 10 | Items per page (max 1000) |
 | search | string | No | - | Search by code or name (case-insensitive) |
 | isActive | boolean | No | - | Filter by active status |
 | sortBy | string | No | createdAt | Sort field: code, name, unit, currentStock, minStock, createdAt |
@@ -656,8 +662,6 @@ See [Authentication & Session](#2-authentication--session) for full details.
 
 ---
 
----
-
 #### `DELETE /api/items` (Bulk Delete)
 
 **Authorization**: ADMIN, WAREHOUSE_STAFF
@@ -678,7 +682,7 @@ See [Authentication & Session](#2-authentication--session) for full details.
 }
 ```
 
-**Note**: This is a **HARD DELETE** with cascade — deletes items, their stock transactions, and opnames permanently. Use with caution.
+**Note**: This is a **SOFT DELETE** — sets `isActive` to `false` for all matching items (same semantics as single-item delete). Stock transactions and stock opnames are permanent history (see `docs/business/INVENTORY-RULES.md`) and are never deleted. Audit logs (`DELETE`, entity `ITEM`) are created per item inside a transaction.
 
 ---
 
@@ -790,6 +794,8 @@ Kode,Nama,Satuan,Stok Saat Ini,Stok Minimum,Deskripsi,Status,Dibuat Pada,Diperba
 4. If update count != 1 → throw StockConcurrencyError (400)
 5. Create audit log
 
+**Note**: Query `GET /api/items` mendukung `limit` hingga 1000 per halaman (endpoint transaksi lain memakai max 100).
+
 ---
 
 ### Stock Out API
@@ -820,16 +826,17 @@ Kode,Nama,Satuan,Stok Saat Ini,Stok Minimum,Deskripsi,Status,Dibuat Pada,Diperba
 ```
 
 **Business Logic** (Atomic Transaction):
-1. Verify item exists and is active
-2. Pre-check: `currentStock >= quantity` (non-atomic, informational)
-3. Create StockTransaction record
-4. Update item.currentStock with optimistic locking:
+1. Verify item exists and is active (pre-check non-atomic, friendly error)
+2. Update item.currentStock atomically (dieksekusi lebih dulu — ini jaminan konkurensi):
    ```sql
    UPDATE items SET currentStock = currentStock - :quantity
    WHERE id = :itemId AND currentStock >= :quantity
    ```
-5. If update count != 1 → throw StockUnavailableError (400) or StockConcurrencyError (400)
-6. Create audit log
+3. If update count != 1 → throw StockUnavailableError (400)
+4. Create StockTransaction record
+5. Create audit log
+
+**Note**: Item tidak ditemukan/nonaktif → 404. Semua langkah dalam satu `$transaction` (atomic).
 
 ---
 
@@ -961,6 +968,47 @@ Kode,Nama,Satuan,Stok Saat Ini,Stok Minimum,Deskripsi,Status,Dibuat Pada,Diperba
 
 ---
 
+#### `GET /api/opname/:id`
+
+**Authorization**: Authenticated (all roles)
+
+**Response** (200):
+```json
+{
+  "data": {
+    "id": "cuid-string",
+    "itemId": "cuid-string",
+    "systemStock": 50,
+    "physicalStock": 48,
+    "difference": -2,
+    "notes": "Broken items",
+    "status": "PENDING",
+    "opnameDate": "2024-01-15T10:00:00Z",
+    "createdAt": "2024-01-15T10:00:00Z",
+    "item": {
+      "id": "cuid-string",
+      "code": "SP-001",
+      "name": "Component A",
+      "unit": "PCS",
+      "currentStock": 50
+    },
+    "createdBy": {
+      "id": "cuid-string",
+      "username": "admin",
+      "fullName": "Admin User"
+    },
+    "reconciliation": null
+  }
+}
+```
+
+**Error Responses**:
+| Status | Condition |
+|--------|-----------|
+| 404 | Opname tidak ditemukan |
+
+---
+
 #### `PUT /api/opname/:id`
 
 **Authorization**: ADMIN, WAREHOUSE_STAFF
@@ -1037,6 +1085,81 @@ Kode,Nama,Satuan,Stok Saat Ini,Stok Minimum,Deskripsi,Status,Dibuat Pada,Diperba
 
 ---
 
+### Users API
+
+Manajemen pengguna. Semua endpoint ADMIN-only (lihat Permission Matrix). Field password tidak pernah dikembalikan.
+
+#### `GET /api/users`
+
+**Authorization**: ADMIN
+
+**Query Parameters**:
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| page | number | No | 1 | Halaman |
+| limit | number | No | 10 | Item per halaman |
+| search | string | No | - | Cari email/username/fullName |
+| role | enum | No | - | ADMIN / WAREHOUSE_STAFF / VIEWER |
+| isActive | boolean | No | - | Filter status aktif |
+
+**Response** (200): standard paginated response; setiap user berisi `id, email, username, fullName, role, isActive, lastLoginAt, createdAt, updatedAt` (tanpa password).
+
+#### `POST /api/users`
+
+**Authorization**: ADMIN (CSRF required)
+
+**Request Body**:
+```typescript
+{
+  email: string (required, format email)
+  username: string (required)
+  fullName: string (required)
+  password: string (required, min 8)
+  role: enum (required: ADMIN | WAREHOUSE_STAFF | VIEWER)
+}
+```
+
+**Error Responses**: 409 jika email/username sudah digunakan.
+
+**Behavior**: hash password (bcrypt), create audit log `CREATE` entity `USER`.
+
+#### `GET /api/users/:id`
+
+**Authorization**: ADMIN
+
+**Response** (200): user detail (shape sama dengan list). 404 jika tidak ditemukan.
+
+#### `PUT /api/users/:id`
+
+**Authorization**: ADMIN (CSRF required)
+
+**Request Body** (semua optional):
+```typescript
+{
+  email?: string
+  username?: string
+  fullName?: string
+  password?: string (min 8)
+  role?: enum (ADMIN | WAREHOUSE_STAFF | VIEWER)
+  isActive?: boolean
+}
+```
+
+**Behavior**:
+- Hash password jika dikirim.
+- **Proteksi self-lockout**: ADMIN tidak dapat menonaktifkan (`isActive: false`) atau menurunkan role akunnya sendiri (400).
+- 409 jika email/username baru sudah digunakan.
+- Create audit log `UPDATE` entity `USER`.
+
+**Error Responses**:
+| Status | Condition |
+|--------|-----------|
+| 400 | Self-lockout attempt / validasi gagal |
+| 404 | Pengguna tidak ditemukan |
+| 409 | Email/username sudah digunakan |
+
+---
+
 ### Dashboard API
 
 #### `GET /api/dashboard/stats`
@@ -1087,7 +1210,7 @@ Kode,Nama,Satuan,Stok Saat Ini,Stok Minimum,Deskripsi,Status,Dibuat Pada,Diperba
 }
 ```
 
-Returns top 5 low stock items sorted by currentStock ASC.
+Returns top 5 items with `currentStock <= minStock` (termasuk stok 0/OUT_OF_STOCK) sorted by currentStock ASC.
 
 ---
 

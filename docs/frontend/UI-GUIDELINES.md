@@ -5,7 +5,7 @@ Proyek `stock-management` ini menggunakan arsitektur modern berbasis komponen *h
 * **Component Library Foundation:** Radix UI (Headless primitives untuk aksesibilitas, navigasi keyboard, & logika).
 * **Component Distribution:** shadcn/ui (Komponen disuntikkan langsung sebagai kode lokal ke folder komponen).
 * **Styling Engine:** Tailwind CSS (Untuk visual, layouting, dan kustomisasi).
-* **Design System & Theme Preset:** Nova Preset (Menggunakan Geist Sans untuk tipografi bersih dan Lucide Icons untuk visual minimalis).
+* **Design System & Theme Preset:** Nova Preset (Menggunakan **Inter** dari `next/font/google` untuk tipografi bersih dan Lucide Icons untuk visual minimalis).
 
 ---
 
@@ -42,7 +42,7 @@ Gunakan token warna resmi berikut di dalam class Tailwind Anda:
 ---
 
 ## 4. UI/UX & Design Guidelines for Stock Management Dashboard
-* **Data Density:** Aplikasi manajemen stok membutuhkan keterbacaan data yang tinggi. Gunakan `Table` dengan ukuran padding yang pas, tipografi **Geist Sans** yang tajam, dan visualisasi angka yang jelas.
+* **Data Density:** Aplikasi manajemen stok membutuhkan keterbacaan data yang tinggi. Gunakan `Table` dengan ukuran padding yang pas, tipografi **Inter** yang tajam, dan visualisasi angka yang jelas.
 * **Iconography:** Selalu gunakan ikon dari library `lucide-react`. Gunakan ikon secara fungsional dan konsisten (misal: *Trash2* untuk hapus, *Pencil* untuk edit, *Plus* untuk tambah).
 * **Loading & Empty States:** Saat memuat data stok atau saat data kosong, selalu sediakan UI *Skeleton* atau *Empty State* menggunakan komponen bawaan yang rapi.
 

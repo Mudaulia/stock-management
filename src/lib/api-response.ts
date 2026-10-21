@@ -135,6 +135,12 @@ export function handleApiError(error: unknown): NextResponse {
     return errorResponse(error.message, error.statusCode, error.code)
   }
 
+  // Error domain kustom (mis. StaleOpnameError, StockConcurrencyError)
+  // membawa pesan bermakna untuk user — kirim sebagai 400, bukan 500.
+  if (error instanceof Error && error.name !== 'Error' && error.message) {
+    return errorResponse(error.message, 400)
+  }
+
   // Log error in development only
   if (process.env.NODE_ENV === 'development') {
     console.error('Unhandled API error:', error)

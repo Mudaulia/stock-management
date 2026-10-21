@@ -193,20 +193,16 @@ export default function StockAdjustmentPage() {
     )
   }
 
-  const getQuantityDisplay = (type: string, quantity: number, notes?: string | null) => {
-    if (type === 'ADJUSTMENT') {
-      const isIncrease = notes?.includes('INCREASE') || quantity > 0
-      return isIncrease ? `+${quantity}` : `-${quantity}`
-    }
+  const getQuantityDisplay = (type: string, quantity: number) => {
+    // Nilai ADJUSTMENT tersimpan bertanda (positif = tambah, negatif = kurang)
     if (type === 'STOCK_IN') return `+${quantity}`
     if (type === 'STOCK_OUT') return `-${quantity}`
     return quantity > 0 ? `+${quantity}` : `${quantity}`
   }
 
-  const getQuantityColor = (type: string, notes?: string | null) => {
-    if (type === 'ADJUSTMENT') {
-      const isIncrease = notes?.includes('INCREASE') || true
-      return isIncrease ? 'text-green-600' : 'text-red-600'
+  const getQuantityColor = (type: string, quantity?: number) => {
+    if (type === 'ADJUSTMENT' && typeof quantity === 'number') {
+      return quantity >= 0 ? 'text-green-600' : 'text-red-600'
     }
     if (type === 'STOCK_IN') return 'text-green-600'
     if (type === 'STOCK_OUT') return 'text-red-600'
@@ -330,7 +326,6 @@ export default function StockAdjustmentPage() {
                     {transactions.map((tx, index) => {
                       const globalIndex = (pagination.page - 1) * pagination.limit + index + 1
                       const isAdjustment = tx.type === 'ADJUSTMENT'
-                      const isIncrease = isAdjustment && tx.notes?.includes('INCREASE')
                       const rowSelected = isSelected(tx.id)
                       return (
                         <TableRow key={tx.id} className={cn("hover:bg-muted/50 transition-colors", rowSelected && "bg-primary/5")} onClick={() => toggleRow(tx.id)}>
@@ -353,9 +348,9 @@ export default function StockAdjustmentPage() {
                           </TableCell>
                           <TableCell>{getTypeBadge(tx.type)}</TableCell>
                           <TableCell className="text-right font-mono font-medium">
-                            <span className={cn(getQuantityColor(tx.type, tx.notes))}>
-                              {isAdjustment ? (isIncrease ? '+' : '-') : tx.type === 'STOCK_IN' ? '+' : '-'}
-                              {tx.quantity.toLocaleString()} {tx.item.unit}
+                            <span className={cn(getQuantityColor(tx.type, tx.quantity))}>
+                              {isAdjustment ? (tx.quantity > 0 ? '+' : '') : tx.type === 'STOCK_IN' ? '+' : '-'}
+                              {Math.abs(tx.quantity).toLocaleString()} {tx.item.unit}
                             </span>
                           </TableCell>
                           <TableCell className="text-sm">{tx.reference || '-'}</TableCell>

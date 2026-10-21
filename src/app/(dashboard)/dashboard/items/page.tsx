@@ -56,6 +56,7 @@ import { cn } from "@/lib/utils";
 import { useToast, Toaster } from "@/components/ui/toaster";
 import { bem, bemVariant } from "@/lib/bem";
 import { useItems, useCreateItem, useUpdateItem, useDeleteItem, useBulkDeleteItems, useExportItems } from "@/hooks/use-api";
+import { useAuth } from "@/hooks/use-auth";
 import { itemSchema } from "@/lib/schemas";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { useKeyboardNavigation, useRowSelection, useUnsavedChangesWarning, useFormDirtyTracking, useDebounce } from "@/hooks";
@@ -69,6 +70,8 @@ const UNITS = ["PCS", "SET", "LITER", "UNIT", "METER", "KG", "BOX", "PACK"];
 export default function ItemsPage() {
   const router = useRouter();
   const { showSuccess, showError } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
   const [search, setSearch] = useState("");
   // Debounce agar tidak fetch API per keystroke (FEF-01)
   const debouncedSearch = useDebounce(search, 300);
@@ -367,9 +370,11 @@ export default function ItemsPage() {
                     {selectedCount} item terpilih
                   </span>
                   <div className="flex gap-2">
-                    <Button variant="destructive" size="sm" onClick={handleBulkDelete} disabled={bulkDeleteMutation.isPending}>
-                      {bulkDeleteMutation.isPending ? 'Menghapus...' : 'Hapus Terpilih'}
-                    </Button>
+                    {isAdmin && (
+                      <Button variant="destructive" size="sm" onClick={handleBulkDelete} disabled={bulkDeleteMutation.isPending}>
+                        {bulkDeleteMutation.isPending ? 'Menghapus...' : 'Hapus Terpilih'}
+                      </Button>
+                    )}
                     <Button variant="outline" size="sm" onClick={handleExport} disabled={exportMutation.isPending}>
                       {exportMutation.isPending ? 'Mengekspor...' : 'Ekspor CSV'}
                     </Button>
@@ -488,7 +493,7 @@ export default function ItemsPage() {
                                   <Edit className="items__dropdown-icon" />
                                   Edit
                                 </DropdownMenuItem>
-                                {item.isActive && (
+                                {isAdmin && item.isActive && (
                                   <DropdownMenuItem
                                     onClick={(e) => {
                                       e.stopPropagation();
