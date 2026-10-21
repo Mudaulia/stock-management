@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Menu, X, Package, ClipboardCheck, ArrowUp, ArrowDown, LogOut, User, FileText, TrendingUp, BarChart3 } from 'lucide-react'
+import { Menu, X, Package, ClipboardCheck, ArrowUp, ArrowDown, LogOut, User, Users, FileText, TrendingUp, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useDashboard } from './dashboard-context'
@@ -48,6 +48,9 @@ export function Sidebar({ userRole, userName, userEmail }: SidebarProps) {
     { name: 'Laporan Stok', href: '/dashboard/reports/stock', icon: BarChart3 },
     { name: 'Stok Rendah', href: '/dashboard/reports/low-stock', icon: TrendingUp },
     { name: 'Mutasi Stok', href: '/dashboard/reports/mutation', icon: FileText },
+    ...(userRole === 'ADMIN'
+      ? [{ name: 'Pengguna', href: '/dashboard/users', icon: Users }]
+      : []),
   ]
 
   const bemBlock = bem('sidebar')

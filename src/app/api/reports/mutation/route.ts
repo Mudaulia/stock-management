@@ -46,7 +46,13 @@ export async function GET(request: NextRequest) {
     if (startDate || endDate) {
       where.transactionDate = {}
       if (startDate) where.transactionDate.gte = new Date(startDate)
-      if (endDate) where.transactionDate.lte = new Date(endDate)
+      // Inclusive end date: YYYY-MM-DD parsed as UTC midnight would exclude
+      // transactions later that day (WIB timezone) — extend to end of day.
+      if (endDate) {
+        const end = new Date(endDate)
+        end.setUTCHours(23, 59, 59, 999)
+        where.transactionDate.lte = end
+      }
     }
 
     const [transactions, total] = await Promise.all([

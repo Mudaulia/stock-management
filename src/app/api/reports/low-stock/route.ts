@@ -35,12 +35,12 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       where.OR = [
-        { code: { contains: search, mode: 'insensitive' } },
-        { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search } },
+        { name: { contains: search } },
       ]
     }
 
-    const [items, total] = await Promise.all([
+    const [items, total, totalOutOfStock] = await Promise.all([
       prisma.item.findMany({
         where,
         skip,
@@ -60,6 +60,8 @@ export async function GET(request: NextRequest) {
         },
       }),
       prisma.item.count({ where }),
+      // Summary over the full filtered dataset (not just the current page)
+      prisma.item.count({ where: { ...where, currentStock: { lte: 0 } } }),
     ])
 
     const itemsWithStatus = items.map(item => ({
@@ -71,8 +73,8 @@ export async function GET(request: NextRequest) {
 
     // Calculate summary
     const summary = {
-      totalLowStock: itemsWithStatus.filter(i => i.stockStatus === 'LOW_STOCK').length,
-      totalOutOfStock: itemsWithStatus.filter(i => i.stockStatus === 'OUT_OF_STOCK').length,
+      totalLowStock: total - totalOutOfStock,
+      totalOutOfStock,
       totalItems: total,
     }
 

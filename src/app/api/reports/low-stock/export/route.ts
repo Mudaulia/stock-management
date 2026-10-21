@@ -47,9 +47,10 @@ export async function GET(request: NextRequest) {
       }
 
       if (query.search) {
+        // No mode: 'insensitive' — not supported by MySQL connector
         where.OR = [
-          { code: { contains: query.search, mode: 'insensitive' } },
-          { name: { contains: query.search, mode: 'insensitive' } },
+          { code: { contains: query.search } },
+          { name: { contains: query.search } },
         ]
       }
     }

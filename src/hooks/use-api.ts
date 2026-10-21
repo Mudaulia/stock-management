@@ -33,6 +33,7 @@ export const queryKeys = {
     detail: (id: string) => ['opname', 'detail', id] as const,
   },
   reports: {
+    all: ['reports'] as const,
     stock: {
       all: ['reports', 'stock'] as const,
       list: (params?: Record<string, unknown>) => ['reports', 'stock', 'list', params] as const,
@@ -45,6 +46,11 @@ export const queryKeys = {
       all: ['reports', 'mutation'] as const,
       list: (params?: Record<string, unknown>) => ['reports', 'mutation', 'list', params] as const,
     },
+  },
+  users: {
+    all: ['users'] as const,
+    list: (params?: Record<string, unknown>) => ['users', 'list', params] as const,
+    detail: (id: string) => ['users', 'detail', id] as const,
   },
   dashboard: {
     stats: ['dashboard', 'stats'] as const,
@@ -225,7 +231,8 @@ export function useBulkDeleteItems(
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (ids: string[]) => {
-      const response = await fetch('/api/items/bulk', {
+      // Endpoint yang benar: DELETE /api/items dengan body { ids }
+      const response = await fetch('/api/items', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -606,6 +613,7 @@ export function useCreateOpname(
       queryClient.invalidateQueries({ queryKey: queryKeys.opname.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.lowStockItems })
+      queryClient.invalidateQueries({ queryKey: queryKeys.reports.all })
     },
     ...options,
   })
@@ -632,6 +640,7 @@ export function useReconcileOpname(
       queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.lowStockItems })
+      queryClient.invalidateQueries({ queryKey: queryKeys.reports.all })
     },
     ...options,
   })
@@ -653,6 +662,8 @@ export function useCancelOpname(
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.opname.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats })
+      queryClient.invalidateQueries({ queryKey: queryKeys.reports.all })
     },
     ...options,
   })
@@ -667,7 +678,7 @@ export interface UseStockReportParams {
   limit?: number
   search?: string
   lowStockOnly?: boolean
-  isActive?: boolean
+  isActive?: boolean | 'true' | 'false' | 'all'
 }
 
 export interface StockReportResponse {
@@ -831,6 +842,97 @@ export function useLowStockItems(options?: UseQueryOptions<LowStockItem[], Error
       if (!response.ok) throw new Error(body.message || 'Failed to fetch low stock items')
       return body.data
     },
+    ...options,
+  })
+}
+
+// ============================================
+// Users Hooks (US-13/US-14 — ADMIN only)
+// ============================================
+
+export interface UseUsersParams {
+  page?: number
+  limit?: number
+  search?: string
+  role?: 'ADMIN' | 'WAREHOUSE_STAFF' | 'VIEWER'
+  isActive?: boolean
+}
+
+export const userSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  username: z.string(),
+  fullName: z.string(),
+  role: z.enum(['ADMIN', 'WAREHOUSE_STAFF', 'VIEWER']),
+  isActive: z.boolean(),
+  lastLoginAt: z.string().datetime().nullable().optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+})
+
+export type UserRow = z.infer<typeof userSchema>
+
+export interface UsersResponse {
+  data: UserRow[]
+  pagination?: Pagination
+}
+
+export function useUsers(
+  params: UseUsersParams = {},
+  options?: Omit<UseQueryOptions<UsersResponse, Error, UsersResponse, readonly unknown[]>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery<UsersResponse, Error, UsersResponse, readonly unknown[]>({
+    queryKey: queryKeys.users.list(params as Record<string, unknown>),
+    queryFn: async (): Promise<UsersResponse> => {
+      const result = await fetchPaginated(buildUrl('/api/users', params as Record<string, unknown>), userSchema)
+      return handleFetchPaginatedResult(result)
+    },
+    ...options,
+  })
+}
+
+function invalidateUsers(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: queryKeys.users.all })
+}
+
+export function useCreateUser(
+  options?: UseMutationOptions<unknown, Error, unknown, unknown>
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: unknown) => {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.message || 'Gagal menambahkan pengguna')
+      return body
+    },
+    onSuccess: () => invalidateUsers(queryClient),
+    ...options,
+  })
+}
+
+export function useUpdateUser(
+  options?: UseMutationOptions<unknown, Error, { id: string; data: unknown }, unknown>
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: unknown }) => {
+      const response = await fetch(`/api/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.message || 'Gagal memperbarui pengguna')
+      return body
+    },
+    onSuccess: () => invalidateUsers(queryClient),
     ...options,
   })
 }

@@ -64,34 +64,22 @@ export async function GET(request: NextRequest) {
       Object.fromEntries(searchParams)
     )
 
+    /*
+     * No mode: 'insensitive' — not supported by MySQL connector;
+     * collation is case-insensitive by default (same as reports routes).
+     */
     const where: {
       OR?: Array<{
-        code?: {
-          contains: string
-          mode: 'insensitive'
-        }
-        name?: {
-          contains: string
-          mode: 'insensitive'
-        }
+        code?: { contains: string }
+        name?: { contains: string }
       }>
       isActive?: boolean
     } = {}
 
     if (query.search) {
       where.OR = [
-        {
-          code: {
-            contains: query.search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          name: {
-            contains: query.search,
-            mode: 'insensitive',
-          },
-        },
+        { code: { contains: query.search } },
+        { name: { contains: query.search } },
       ]
     }
 

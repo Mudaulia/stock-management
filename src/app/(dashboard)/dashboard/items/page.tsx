@@ -58,7 +58,7 @@ import { bem, bemVariant } from "@/lib/bem";
 import { useItems, useCreateItem, useUpdateItem, useDeleteItem, useBulkDeleteItems, useExportItems } from "@/hooks/use-api";
 import { itemSchema } from "@/lib/schemas";
 import { SkeletonTable } from "@/components/ui/skeleton";
-import { useKeyboardNavigation, useRowSelection, useUnsavedChangesWarning, useFormDirtyTracking } from "@/hooks";
+import { useKeyboardNavigation, useRowSelection, useUnsavedChangesWarning, useFormDirtyTracking, useDebounce } from "@/hooks";
 import { EmptyState, NoData } from "@/components/ui/empty-state";
 
 type ItemForm = z.infer<typeof itemSchema>;
@@ -70,6 +70,8 @@ export default function ItemsPage() {
   const router = useRouter();
   const { showSuccess, showError } = useToast();
   const [search, setSearch] = useState("");
+  // Debounce agar tidak fetch API per keystroke (FEF-01)
+  const debouncedSearch = useDebounce(search, 300);
   const [isActiveFilter, setIsActiveFilter] = useState<
     "all" | "true" | "false"
   >("all");
@@ -106,10 +108,16 @@ export default function ItemsPage() {
   const watchedUnit = watch("unit");
 
   // React Query hooks
-  const { data: itemsData, isLoading, refetch } = useItems({
+  const {
+    data: itemsData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useItems({
     page: pagination.page,
     limit: pagination.limit,
-    search,
+    search: debouncedSearch,
     isActive: isActiveFilter !== "all" ? isActiveFilter === "true" : undefined,
   });
 
@@ -336,6 +344,13 @@ export default function ItemsPage() {
         <CardContent className="pt-0">
           {isLoading ? (
             <SkeletonTable rows={5} columns={9} />
+          ) : isError ? (
+            <EmptyState
+              title="Gagal memuat data"
+              description={error?.message ?? "Terjadi kesalahan saat memuat data barang. Silakan coba lagi."}
+              actionLabel="Coba Lagi"
+              onAction={() => refetch()}
+            />
           ) : items.length === 0 ? (
             <NoData
               title="Belum ada data barang"

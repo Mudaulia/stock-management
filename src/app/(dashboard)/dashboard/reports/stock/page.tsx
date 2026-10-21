@@ -49,12 +49,12 @@ export default function StockReportPage() {
   });
 
   // React Query hooks
-  const { data: reportData, isLoading, refetch } = useStockReport({
+  const { data: reportData, isLoading, isError, error, refetch } = useStockReport({
     page: pagination.page,
     limit: pagination.limit,
     search,
     lowStockOnly,
-    isActive: isActiveFilter !== "all" ? isActiveFilter === "true" : undefined,
+    isActive: isActiveFilter === "all" ? "all" : isActiveFilter,
   });
 
   const items = reportData?.data ?? [];
@@ -238,6 +238,13 @@ export default function StockReportPage() {
         <CardContent className="pt-0">
           {isLoading ? (
             <SkeletonTable rows={5} columns={7} />
+          ) : isError ? (
+            <EmptyState
+              title="Gagal memuat data"
+              description={error?.message ?? "Terjadi kesalahan saat memuat laporan stok. Silakan coba lagi."}
+              actionLabel="Coba Lagi"
+              onAction={() => refetch()}
+            />
           ) : items.length === 0 ? (
             <NoData
               title="Tidak ada data stok"

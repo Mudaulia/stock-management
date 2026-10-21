@@ -7,6 +7,7 @@ const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
     return Math.min(times * 100, 3000)
   },
   lazyConnect: true,
+  enableOfflineQueue: false,
 })
 
 redis.on('error', (err) => {
@@ -14,6 +15,27 @@ redis.on('error', (err) => {
     console.error('Redis connection error:', err)
   }
 })
+
+/**
+ * Single-flight connection: connect at most once until the status leaves
+ * "connecting"/"connecting" states. Calling `connect()` on an already
+ * ready client throws — which previously caused false fail-open.
+ */
+let connecting: Promise<void> | null = null
+
+async function ensureConnected(): Promise<void> {
+  if (redis.status === 'ready') return
+  if (redis.status === 'connecting') {
+    await (connecting ?? redis.connect())
+    return
+  }
+  connecting = redis.connect()
+  try {
+    await connecting
+  } finally {
+    connecting = null
+  }
+}
 
 export interface RateLimitConfig {
   windowMs: number
@@ -37,7 +59,7 @@ export async function rateLimit(
   const windowStart = now - config.windowMs
 
   try {
-    await redis.connect()
+    await ensureConnected()
   } catch {
     // If Redis is not available, allow the request (fail-open for availability)
     return {
@@ -53,7 +75,14 @@ export async function rateLimit(
   pipeline.zcard(key)
   pipeline.zadd(key, now, `${now}-${Math.random()}`)
   pipeline.expire(key, Math.ceil(config.windowMs / 1000))
-  const results = await pipeline.exec()
+
+  let results: [error: Error | null, result: unknown][] | null
+  try {
+    results = await pipeline.exec()
+  } catch {
+    // Pipeline failures (e.g. connection dropped mid-request) also fail open
+    results = null
+  }
 
   if (!results) {
     return {
@@ -82,8 +111,4 @@ export function getRateLimitHeaders(result: RateLimitResult): Record<string, str
     'X-RateLimit-Remaining': result.remaining.toString(),
     'X-RateLimit-Reset': Math.ceil(result.resetTime / 1000).toString(),
   }
-}
-
-export async function closeRedis(): Promise<void> {
-  await redis.quit()
 }

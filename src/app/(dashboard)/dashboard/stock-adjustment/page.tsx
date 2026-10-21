@@ -85,7 +85,7 @@ export default function StockAdjustmentPage() {
   })
 
   // React Query hooks
-  const { data: transactionsData, isLoading, refetch: refetchTransactions } = useStockAdjustment({
+  const { data: transactionsData, isLoading, isError, error, refetch: refetchTransactions } = useStockAdjustment({
     page: pagination.page,
     limit: pagination.limit,
     search,
@@ -276,6 +276,13 @@ export default function StockAdjustmentPage() {
         <CardContent className="pt-0">
           {isLoading ? (
             <SkeletonTable rows={5} columns={8} />
+          ) : isError ? (
+            <EmptyState
+              title="Gagal memuat data"
+              description={error?.message ?? "Terjadi kesalahan saat memuat penyesuaian. Silakan coba lagi."}
+              actionLabel="Coba Lagi"
+              onAction={() => refetchTransactions()}
+            />
           ) : transactions.length === 0 ? (
             <NoData
               title="Belum ada data penyesuaian stok"

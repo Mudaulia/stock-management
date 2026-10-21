@@ -85,7 +85,7 @@ export default function StockInPage() {
   })
 
   // React Query hooks
-  const { data: transactionsData, isLoading, refetch: refetchTransactions } = useStockIn({
+  const { data: transactionsData, isLoading, isError, error, refetch: refetchTransactions } = useStockIn({
     page: pagination.page,
     limit: pagination.limit,
     search,
@@ -218,6 +218,13 @@ export default function StockInPage() {
         <CardContent className="pt-0">
           {isLoading ? (
             <SkeletonTable rows={5} columns={7} />
+          ) : isError ? (
+            <EmptyState
+              title="Gagal memuat data"
+              description={error?.message ?? "Terjadi kesalahan saat memuat transaksi. Silakan coba lagi."}
+              actionLabel="Coba Lagi"
+              onAction={() => refetchTransactions()}
+            />
           ) : transactions.length === 0 ? (
             <NoData
               title="Belum ada transaksi stok masuk"

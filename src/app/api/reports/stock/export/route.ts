@@ -16,7 +16,7 @@ const exportQuerySchema = z.object({
   isActive: z
     .string()
     .optional()
-    .transform((val) => (val === undefined ? undefined : val === 'true')),
+    .transform((val) => (val === undefined ? undefined : val === 'true' ? true : val === 'all' ? undefined : false)),
   sortBy: z
     .enum(['code', 'name', 'unit', 'currentStock', 'minStock', 'createdAt'])
     .default('name'),
@@ -44,9 +44,11 @@ export async function GET(request: NextRequest) {
       }
 
       if (query.search) {
+        // No mode: 'insensitive' — not supported by MySQL connector;
+        // collation is case-insensitive by default (same as list route).
         where.OR = [
-          { code: { contains: query.search, mode: 'insensitive' } },
-          { name: { contains: query.search, mode: 'insensitive' } },
+          { code: { contains: query.search } },
+          { name: { contains: query.search } },
         ]
       }
 

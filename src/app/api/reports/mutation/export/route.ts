@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 const exportQuerySchema = z.object({
   ids: z.string().optional(),
   search: z.string().optional(),
-  type: z.string().optional(),
+  type: z.enum(['STOCK_IN', 'STOCK_OUT', 'ADJUSTMENT']).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   itemId: z.string().optional(),
@@ -36,11 +36,13 @@ export async function GET(request: NextRequest) {
       where.id = { in: query.ids.split(',') }
     } else {
       if (query.search) {
+        // No mode: 'insensitive' — not supported by MySQL connector;
+        // collation is case-insensitive by default (same as list route).
         where.OR = [
-          { item: { code: { contains: query.search, mode: 'insensitive' } } },
-          { item: { name: { contains: query.search, mode: 'insensitive' } } },
-          { reference: { contains: query.search, mode: 'insensitive' } },
-          { notes: { contains: query.search, mode: 'insensitive' } },
+          { item: { code: { contains: query.search } } },
+          { item: { name: { contains: query.search } } },
+          { reference: { contains: query.search } },
+          { notes: { contains: query.search } },
         ]
       }
 
@@ -56,7 +58,12 @@ export async function GET(request: NextRequest) {
         where.transactionDate = {}
         const transactionDate = where.transactionDate as Record<string, Date>
         if (query.startDate) transactionDate.gte = new Date(query.startDate)
-        if (query.endDate) transactionDate.lte = new Date(query.endDate)
+        // Inclusive end date — extend YYYY-MM-DD to end of day (WIB-safe)
+        if (query.endDate) {
+          const end = new Date(query.endDate)
+          end.setUTCHours(23, 59, 59, 999)
+          transactionDate.lte = end
+        }
       }
     }
 

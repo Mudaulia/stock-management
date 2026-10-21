@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { handleApiError, paginatedResponse } from '@/lib/api-response'
+import type { Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,16 +18,21 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const search = searchParams.get('search') || ''
     const lowStockOnly = searchParams.get('lowStockOnly') === 'true'
-    const isActive = searchParams.get('isActive') !== 'false'
+    const isActiveParam = searchParams.get('isActive')
 
     const skip = (page - 1) * limit
 
-    const where: Record<string, unknown> = { isActive }
+    const where: Prisma.ItemWhereInput = {}
+    // Only filter by isActive when explicitly requested.
+    // "Semua" (all) on the frontend sends isActive=all → undefined → no filter.
+    if (isActiveParam && isActiveParam !== 'all') {
+      where.isActive = isActiveParam === 'true'
+    }
 
     if (search) {
       where.OR = [
-        { code: { contains: search, mode: 'insensitive' } },
-        { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search } },
+        { name: { contains: search } },
       ]
     }
 
@@ -34,7 +40,18 @@ export async function GET(request: NextRequest) {
       where.currentStock = { lte: prisma.item.fields.minStock }
     }
 
-    const [items, total] = await Promise.all([
+    // Summary over the full filtered dataset (not just the current page)
+    const [total, lowStockCount, outOfStockCount] = await Promise.all([
+      prisma.item.count({ where }),
+      prisma.item.count({
+        where: { ...where, currentStock: { gt: 0, lte: prisma.item.fields.minStock } },
+      }),
+      prisma.item.count({
+        where: { ...where, currentStock: { lte: 0 } },
+      }),
+    ])
+
+    const [items] = await Promise.all([
       prisma.item.findMany({
         where,
         skip,
@@ -53,13 +70,12 @@ export async function GET(request: NextRequest) {
           updatedAt: true,
         },
       }),
-      prisma.item.count({ where }),
     ])
 
     // Calculate stock status for each item
     const itemsWithStatus = items.map(item => ({
       ...item,
-      stockStatus: item.currentStock <= 0 ? 'OUT_OF_STOCK' : 
+      stockStatus: item.currentStock <= 0 ? 'OUT_OF_STOCK' :
                    item.currentStock <= item.minStock ? 'LOW_STOCK' : 'NORMAL',
       stockPercentage: item.minStock > 0 ? Math.round((item.currentStock / item.minStock) * 100) : 100,
     }))
@@ -67,9 +83,9 @@ export async function GET(request: NextRequest) {
     // Calculate summary
     const summary = {
       totalItems: total,
-      lowStockCount: itemsWithStatus.filter(i => i.stockStatus === 'LOW_STOCK').length,
-      outOfStockCount: itemsWithStatus.filter(i => i.stockStatus === 'OUT_OF_STOCK').length,
-      normalCount: itemsWithStatus.filter(i => i.stockStatus === 'NORMAL').length,
+      lowStockCount,
+      outOfStockCount,
+      normalCount: total - lowStockCount - outOfStockCount,
     }
 
     return NextResponse.json(

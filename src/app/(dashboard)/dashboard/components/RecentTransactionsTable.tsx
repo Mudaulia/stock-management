@@ -105,16 +105,18 @@ export function RecentTransactionsTable({ transactions, className }: RecentTrans
             </TableRow>
           ))}
         </TableBody>
+        {/* caption wajib berada di dalam <table> — di luar tabel
+            memicu error hydration React (caption di dalam div) */}
+        <TableCaption className="border-t p-4">
+          <Link
+            href="/dashboard/reports/mutation"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          >
+            Lihat Semua Transaksi
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
+        </TableCaption>
       </Table>
-      <TableCaption className="p-4 border-t">
-        <Link
-          href="/dashboard/reports/mutation"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-        >
-          Lihat Semua Transaksi
-          <ExternalLink className="h-3.5 w-3.5" />
-        </Link>
-      </TableCaption>
     </div>
   )
 }

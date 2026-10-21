@@ -48,7 +48,7 @@ export default function LowStockReportPage() {
   });
 
   // React Query hooks
-  const { data: reportData, isLoading, refetch } = useLowStockReport({
+  const { data: reportData, isLoading, isError, error, refetch } = useLowStockReport({
     page: pagination.page,
     limit: pagination.limit,
     search,
@@ -201,6 +201,13 @@ export default function LowStockReportPage() {
         <CardContent className="pt-0">
           {isLoading ? (
             <SkeletonTable rows={5} columns={8} />
+          ) : isError ? (
+            <EmptyState
+              title="Gagal memuat data"
+              description={error?.message ?? "Terjadi kesalahan saat memuat laporan stok minimum. Silakan coba lagi."}
+              actionLabel="Coba Lagi"
+              onAction={() => refetch()}
+            />
           ) : items.length === 0 ? (
             <NoData
               title="Tidak ada data stok minimum"

@@ -8,12 +8,23 @@ import { Plus, ArrowUp, ArrowDown, ClipboardCheck } from 'lucide-react'
 import Link from 'next/link'
 import { useDashboardStats, useRecentTransactions, useLowStockItems } from '@/hooks/use-api'
 import { useAuth } from '@/hooks/use-auth'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth()
-  const { data: stats, isLoading: statsLoading } = useDashboardStats()
-  const { data: recentTransactions, isLoading: transactionsLoading } = useRecentTransactions()
-  const { data: lowStockItems, isLoading: lowStockLoading } = useLowStockItems()
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useDashboardStats()
+  const {
+    data: recentTransactions,
+    isLoading: transactionsLoading,
+    isError: transactionsError,
+    refetch: refetchTransactions,
+  } = useRecentTransactions()
+  const {
+    data: lowStockItems,
+    isLoading: lowStockLoading,
+    isError: lowStockError,
+    refetch: refetchLowStock,
+  } = useLowStockItems()
 
   if (authLoading) {
     return (
@@ -75,6 +86,8 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
+      ) : statsError ? (
+        <p className="text-sm text-destructive">Gagal memuat ringkasan statistik. Muat ulang halaman untuk mencoba lagi.</p>
       ) : (
         <StatCards
           totalItems={stats?.totalItems ?? 0}
@@ -96,6 +109,13 @@ export default function DashboardPage() {
                 <div key={i} className="h-12 bg-muted rounded" />
               ))}
             </div>
+          ) : transactionsError ? (
+            <EmptyState
+              title="Gagal memuat transaksi"
+              description="Terjadi kesalahan saat memuat transaksi terbaru."
+              actionLabel="Coba Lagi"
+              onAction={() => refetchTransactions()}
+            />
           ) : (
             <RecentTransactionsTable transactions={recentTransactions ?? []} />
           )}
@@ -109,6 +129,13 @@ export default function DashboardPage() {
                 <div key={i} className="h-16 bg-muted rounded" />
               ))}
             </div>
+          ) : lowStockError ? (
+            <EmptyState
+              title="Gagal memuat data"
+              description="Terjadi kesalahan saat memuat peringatan stok minimum."
+              actionLabel="Coba Lagi"
+              onAction={() => refetchLowStock()}
+            />
           ) : (
             <LowStockAlert items={lowStockItems ?? []} />
           )}

@@ -98,7 +98,7 @@ export default function OpnamePage() {
   })
 
   // React Query hooks
-  const { data: opnamesData, isLoading, refetch: refetchOpnames } = useOpname({
+  const { data: opnamesData, isLoading, isError, error, refetch: refetchOpnames } = useOpname({
     page: pagination.page,
     limit: pagination.limit,
     search,
@@ -314,6 +314,13 @@ export default function OpnamePage() {
         <CardContent className={bemBlock.e('table-card')}>
           {isLoading ? (
             <SkeletonTable rows={5} columns={9} />
+          ) : isError ? (
+            <EmptyState
+              title="Gagal memuat data"
+              description={error?.message ?? "Terjadi kesalahan saat memuat data opname. Silakan coba lagi."}
+              actionLabel="Coba Lagi"
+              onAction={() => refetchOpnames()}
+            />
           ) : opnames.length === 0 ? (
             <NoData
               title="Belum ada data opname"

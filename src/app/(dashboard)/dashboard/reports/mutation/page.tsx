@@ -52,7 +52,7 @@ export default function MutationReportPage() {
   });
 
   // React Query hooks
-  const { data: reportData, isLoading, refetch } = useMutationReport({
+  const { data: reportData, isLoading, isError, error, refetch } = useMutationReport({
     page: pagination.page,
     limit: pagination.limit,
     search,
@@ -238,7 +238,10 @@ export default function MutationReportPage() {
                 <Input
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setPagination((prev) => ({ ...prev, page: 1 }));
+                  }}
                   className="pl-10"
                 />
               </div>
@@ -251,7 +254,10 @@ export default function MutationReportPage() {
                 <Input
                   type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setPagination((prev) => ({ ...prev, page: 1 }));
+                  }}
                   className="pl-10"
                 />
               </div>
@@ -265,6 +271,13 @@ export default function MutationReportPage() {
         <CardContent className="pt-0">
           {isLoading ? (
             <SkeletonTable rows={5} columns={7} />
+          ) : isError ? (
+            <EmptyState
+              title="Gagal memuat data"
+              description={error?.message ?? "Terjadi kesalahan saat memuat laporan mutasi stok. Silakan coba lagi."}
+              actionLabel="Coba Lagi"
+              onAction={() => refetch()}
+            />
           ) : transactions.length === 0 ? (
             <NoData
               title="Tidak ada data mutasi stok"
