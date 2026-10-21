@@ -21,6 +21,7 @@ Dokumentasi project telah dimigrasikan ke **`.trae/rules/`** (project rules TRAE
 | `.trae/skills/dev-workflow/SKILL.md` | setup & workflow development (skill — aktifkan manual) |
 | `.trae/skills/test-verification/SKILL.md` | testing & verification (skill — aktifkan manual) |
 | `.trae/skills/api-nextjs-reference/SKILL.md` | referensi penulisan API Next.js (skill — aktifkan manual) |
+| `.trae/skills/shadcn-ui/SKILL.md` | standar shadcn/ui + Tailwind v3 (skill — aktifkan manual) |
 | `.trae/rules/database/database-safety.md` | Prisma/database/migration |
 
 ## Yang Tetap di `docs/`
