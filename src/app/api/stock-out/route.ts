@@ -12,15 +12,25 @@ const stockOutCreateSchema = z.object({
   quantity: z.number().int().positive('Jumlah harus lebih dari 0'),
   reference: z.string().max(100).optional(),
   notes: z.string().optional(),
-  transactionDate: z.string().datetime().optional(),
+  // Terima ISO datetime maupun date-only (yyyy-MM-dd) dari <input type="date"> UI
+  transactionDate: z
+    .string()
+    .refine((v) => !isNaN(Date.parse(v)), 'Tanggal tidak valid')
+    .optional(),
 })
 
 const stockOutQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
   itemId: z.string().optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+  startDate: z
+    .string()
+    .refine((v) => !isNaN(Date.parse(v)), 'Tanggal mulai tidak valid')
+    .optional(),
+  endDate: z
+    .string()
+    .refine((v) => !isNaN(Date.parse(v)), 'Tanggal akhir tidak valid')
+    .optional(),
   sortBy: z
     .enum(['transactionDate', 'quantity', 'createdAt'])
     .default('transactionDate'),
