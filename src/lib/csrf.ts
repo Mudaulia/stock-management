@@ -13,12 +13,12 @@ if (!CSRF_SECRET || CSRF_SECRET.length < 32) {
 const secretKey = new TextEncoder().encode(CSRF_SECRET)
 
 export interface CSRFTokenPayload {
-  sessionId: string
+  userId: string
   timestamp: number
 }
 
-export async function generateCSRFToken(sessionId: string): Promise<string> {
-  return new SignJWT({ sessionId, timestamp: Date.now() })
+export async function generateCSRFToken(userId: string): Promise<string> {
+  return new SignJWT({ userId, timestamp: Date.now() })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('1h')
@@ -29,7 +29,7 @@ export async function verifyCSRFToken(token: string): Promise<CSRFTokenPayload |
   try {
     const { payload } = await jwtVerify(token, secretKey)
     return {
-      sessionId: payload.sessionId as string,
+      userId: payload.userId as string,
       timestamp: payload.timestamp as number,
     }
   } catch {
@@ -69,41 +69,7 @@ export function clearCSRFTokenCookie(response: NextResponse): void {
   })
 }
 
-export async function csrfProtection(
-  request: NextRequest,
-  sessionId: string
-): Promise<{ valid: boolean; response?: NextResponse }> {
-  // Skip CSRF for GET, HEAD, OPTIONS
-  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
-    return { valid: true }
-  }
-
-  const token = getCSRFTokenFromRequest(request)
-  if (!token) {
-    return {
-      valid: false,
-      response: NextResponse.json(
-        { message: 'CSRF token missing' },
-        { status: 403 }
-      ),
-    }
-  }
-
-  const payload = await verifyCSRFToken(token)
-  if (!payload || payload.sessionId !== sessionId) {
-    return {
-      valid: false,
-      response: NextResponse.json(
-        { message: 'Invalid CSRF token' },
-        { status: 403 }
-      ),
-    }
-  }
-
-  return { valid: true }
-}
-
-export async function verifyCSRF(request: NextRequest): Promise<{ valid: boolean; response?: NextResponse; sessionId?: string }> {
+export async function verifyCSRF(request: NextRequest): Promise<{ valid: boolean; response?: NextResponse; userId?: string }> {
   // Skip CSRF for GET, HEAD, OPTIONS
   if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
     return { valid: true }
@@ -132,7 +98,7 @@ export async function verifyCSRF(request: NextRequest): Promise<{ valid: boolean
   }
 
   const payload = await verifyCSRFToken(token)
-  if (!payload || payload.sessionId !== session.userId) {
+  if (!payload || payload.userId !== session.userId) {
     return {
       valid: false,
       response: NextResponse.json(
@@ -142,7 +108,7 @@ export async function verifyCSRF(request: NextRequest): Promise<{ valid: boolean
     }
   }
 
-  return { valid: true, sessionId: session.userId }
+  return { valid: true, userId: session.userId }
 }
 
 export function addCSRFHeaders(response: NextResponse, token: string): NextResponse {

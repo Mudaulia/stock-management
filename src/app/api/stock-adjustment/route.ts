@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const query = stockAdjustmentQuerySchema.parse(Object.fromEntries(searchParams))
 
-    const where: any = { type: 'ADJUSTMENT' }
+    const where: Prisma.StockTransactionWhereInput = { type: 'ADJUSTMENT' }
 
     if (query.itemId) where.itemId = query.itemId
     if (query.startDate || query.endDate) {

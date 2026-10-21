@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -123,10 +123,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
-            Belum punya akun?{' '}
-            <Link href="/register" className="text-primary hover:underline">
-              Daftar
-            </Link>
+            Hubungi administrator untuk mendapatkan akses.
           </p>
         </CardFooter>
       </Card>

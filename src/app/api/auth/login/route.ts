@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, setSession } from '@/lib/auth'
 import { handleApiError, successResponse } from '@/lib/api-response'
@@ -27,14 +28,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { email, password } = body
-
-    if (!email || !password) {
-      return NextResponse.json(
-        { message: 'Email dan password wajib diisi' },
-        { status: 400 }
-      )
-    }
+    const { email, password } = z
+      .object({
+        email: z.string().email('Format email tidak valid'),
+        password: z.string().min(1, 'Password wajib diisi'),
+      })
+      .parse(body)
 
     const user = await prisma.user.findUnique({
       where: { email },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { TransactionType, type Prisma } from '@prisma/client'
 import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
 
 export const dynamic = 'force-dynamic'
@@ -23,19 +24,19 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    const where: any = {}
+    const where: Prisma.StockTransactionWhereInput = {}
 
     if (search) {
       where.OR = [
-        { item: { code: { contains: search, mode: 'insensitive' } } },
-        { item: { name: { contains: search, mode: 'insensitive' } } },
-        { reference: { contains: search, mode: 'insensitive' } },
-        { notes: { contains: search, mode: 'insensitive' } },
+        { item: { code: { contains: search } } },
+        { item: { name: { contains: search } } },
+        { reference: { contains: search } },
+        { notes: { contains: search } },
       ]
     }
 
-    if (type) {
-      where.type = type
+    if (type && ['STOCK_IN', 'STOCK_OUT', 'ADJUSTMENT'].includes(type)) {
+      where.type = type as TransactionType
     }
 
     if (itemId) {
@@ -66,22 +67,17 @@ export async function GET(request: NextRequest) {
       prisma.stockTransaction.count({ where }),
     ])
 
-    // Calculate summary by type
+    // Calculate summary by type (no pagination — where only)
     const summary = await prisma.stockTransaction.groupBy({
       by: ['type'],
-      where: {
-        ...where,
-        // Remove pagination for summary
-        skip: undefined,
-        take: undefined,
-      },
+      where,
       _sum: { quantity: true },
       _count: { id: true },
     })
 
     const summaryByType = summary.reduce((acc, curr) => {
       acc[curr.type] = {
-        totalQuantity: curr._sum.quantity || 0,
+        totalQuantity: curr._sum.quantity ?? 0,
         transactionCount: curr._count.id,
       }
       return acc

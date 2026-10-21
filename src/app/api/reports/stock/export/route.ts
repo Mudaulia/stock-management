@@ -9,8 +9,14 @@ export const dynamic = 'force-dynamic'
 const exportQuerySchema = z.object({
   ids: z.string().optional(),
   search: z.string().optional(),
-  lowStockOnly: z.coerce.boolean().optional(),
-  isActive: z.coerce.boolean().optional(),
+  lowStockOnly: z
+    .string()
+    .optional()
+    .transform((val) => (val === undefined ? undefined : val === 'true')),
+  isActive: z
+    .string()
+    .optional()
+    .transform((val) => (val === undefined ? undefined : val === 'true')),
   sortBy: z
     .enum(['code', 'name', 'unit', 'currentStock', 'minStock', 'createdAt'])
     .default('name'),

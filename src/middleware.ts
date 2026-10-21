@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { verifyToken, JWTPayload } from '@/lib/auth'
 
-const PUBLIC_PATHS = ['/login', '/register', '/api/auth/login', '/api/auth/register']
+const PUBLIC_PATHS = ['/login', '/api/auth/login']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -16,6 +16,14 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value
 
   if (!token) {
+    // API clients get a JSON 401 instead of an HTML redirect
+    if (pathname.startsWith('/api')) {
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
@@ -25,6 +33,15 @@ export async function middleware(request: NextRequest) {
   const payload = await verifyToken(token)
 
   if (!payload) {
+    if (pathname.startsWith('/api')) {
+      const response = NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 401 }
+      )
+      response.cookies.delete('auth-token')
+      return response
+    }
+
     const response = NextResponse.redirect(new URL('/login', request.url))
     response.cookies.delete('auth-token')
     return response

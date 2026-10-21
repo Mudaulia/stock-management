@@ -175,3 +175,50 @@ Perubahan stock penting harus dapat ditelusuri ke:
 Jika business rule berubah secara signifikan, buat decision record di:
 
 `docs/decisions/`
+
+## Implementation Status (As-Is, 2026-10-21)
+
+Bagian ini mendokumentasikan bagaimana setiap aturan di atas diimplementasikan aktual di repository.
+
+### Stock In — implementasi
+
+- Role: ADMIN/WAREHOUSE_STAFF; item wajib aktif; quantity > 0 (Zod).
+- **Optimistic locking**: `tx.item.updateMany({ where: { id, isActive: true, currentStock: snapshot } , data: { currentStock: { increment } } })` — jika `count !== 1` → `StockConcurrencyError` → rollback (`src/app/api/stock-in/route.ts`).
+- Transaksi + audit log di dalam `$transaction`.
+
+### Stock Out — implementasi
+
+- Pre-check stok di server hanya "friendly check"; jaminan atomik memakai conditional update:
+  `updateMany({ where: { id, currentStock: { gte: quantity } }, data: { currentStock: { decrement } } })` — gagal → `StockUnavailableError`.
+- Negative stock mustahil terjadi, termasuk pada request paralel.
+
+### Adjustment — implementasi
+
+- Notes **wajib** (Zod); quantity bertanda (boleh negatif, tidak boleh 0).
+- Optimistic locking (`updateMany` dengan `currentStock: expectedStock`), bukan direct set tanpa pengecekan.
+- Tercatat sebagai StockTransaction ADJUSTMENT + AuditLog dengan `adjustmentDirection`.
+
+### Stock Opname — implementasi
+
+- Snapshot `systemStock = item.currentStock` saat opname dibuat; `difference = physicalStock - systemStock`.
+- Satu opname PENDING per item; status PENDING → RECONCILED/CANCELLED (DELETE = cancel, hanya PENDING).
+
+### Reconciliation — implementasi
+
+- **ADMIN-only**; snapshot consistency check: `updateMany({ where: { id, currentStock: opname.systemStock } })` — jika stok sudah berubah → `StaleOpnameError` (overwrite stok lama dicegah).
+- Jika difference ≠ 0: buat StockTransaction ADJUSTMENT + record StockReconciliation + 2 audit log (ADJUST pada Item, RECONCILE pada StockOpname).
+
+### Atomicity & Concurrency — implementasi
+
+- Semua jalur mutasi stok atomik dalam `$transaction` dengan pola: validate → conditional `updateMany` → create transaction → create audit log.
+- Tidak ditemukan update stok non-atomik pada audit.
+
+### Current Stock — implementasi
+
+- `Item.currentStock` adalah **authoritative state**; tidak pernah negatif (dijamin conditional update).
+
+### Transaction History — implementasi
+
+- Riwayat transaksi bersifat permanen; hapus item tunggal memakai soft delete (`isActive = false`).
+
+> ✅ **Pelanggaran di atas telah diperbaiki (2026-10-21, INV-01 `RESOLVED`):** bulk delete items di `src/app/api/items/route.ts` kini melakukan soft delete (`isActive = false`) — `stock_transactions` dan `stock_opnames` tidak lagi dihapus, dan audit log mencatat `oldData`. Rujuk `docs/audits/2026-10-21-security-and-inventory-audit.md`.

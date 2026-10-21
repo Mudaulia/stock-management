@@ -255,8 +255,8 @@ Perubahan inventory harus mempertimbangkan:
 
 Sebelum mengubah behavior bisnis, baca:
 
-- `ERD.md`
-- `user_story_dan_kebutuhan_teknis.md`
+- `docs/product/ERD.md`
+- `docs/product/USER_STORY.md`
 
 Jika requirement yang relevan belum jelas, jangan mengarang behavior.
 

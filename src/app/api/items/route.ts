@@ -28,7 +28,10 @@ const itemQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(1000).default(10),
   search: z.string().optional(),
-  isActive: z.coerce.boolean().optional(),
+  isActive: z
+    .string()
+    .optional()
+    .transform((val) => (val === undefined ? undefined : val === 'true')),
   sortBy: z
     .enum([
       'code',
@@ -159,30 +162,36 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json()
     const { ids } = z.object({ ids: z.array(z.string()).min(1) }).parse(body)
 
+    /*
+     * Soft delete only — aligns with single-item delete.
+     *
+     * Stock transactions and stock opnames are permanent history
+     * (see docs/business/INVENTORY-RULES.md) and must never be deleted.
+     */
     await prisma.$transaction(async (tx) => {
-      // Delete related stock transactions first (cascade would handle this but being explicit)
-      await tx.stockTransaction.deleteMany({
-        where: { itemId: { in: ids } },
+      const items = await tx.item.findMany({
+        where: { id: { in: ids }, isActive: true },
+        select: { id: true, code: true, name: true },
       })
 
-      // Delete related opnames
-      await tx.stockOpname.deleteMany({
-        where: { itemId: { in: ids } },
-      })
+      if (items.length === 0) {
+        return
+      }
 
-      // Delete items
-      await tx.item.deleteMany({
-        where: { id: { in: ids } },
+      await tx.item.updateMany({
+        where: { id: { in: items.map((item) => item.id) } },
+        data: { isActive: false },
       })
 
       // Create audit logs
-      for (const id of ids) {
+      for (const item of items) {
         await tx.auditLog.create({
           data: {
             userId: user.id,
             action: 'DELETE',
             entity: 'ITEM',
-            entityId: id,
+            entityId: item.id,
+            oldData: item,
           },
         })
       }

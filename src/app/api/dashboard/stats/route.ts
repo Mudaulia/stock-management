@@ -5,7 +5,14 @@ import { handleApiError, successResponse } from '@/lib/api-response'
 
 export async function GET() {
   try {
-    await requireAuth()
+    const user = await requireAuth()
+
+    if (!user) {
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
 
     const [totalItems, lowStockItems, outOfStockItems, recentStockIn, recentStockOut, pendingOpnames] = await Promise.all([
       prisma.item.count({ where: { isActive: true } }),

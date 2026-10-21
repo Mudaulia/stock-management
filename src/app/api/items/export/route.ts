@@ -10,7 +10,10 @@ export const dynamic = 'force-dynamic'
 const exportQuerySchema = z.object({
   ids: z.string().optional(),
   search: z.string().optional(),
-  isActive: z.coerce.boolean().optional(),
+  isActive: z
+    .string()
+    .optional()
+    .transform((val) => (val === undefined ? undefined : val === 'true')),
   sortBy: z
     .enum([
       'code',

@@ -5,7 +5,14 @@ import { handleApiError, successResponse } from '@/lib/api-response'
 
 export async function GET() {
   try {
-    await requireAuth()
+    const user = await requireAuth()
+
+    if (!user) {
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
 
     const transactions = await prisma.stockTransaction.findMany({
       take: 5,

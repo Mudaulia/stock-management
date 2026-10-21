@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { OpnameStatus, type Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
 import { verifyCSRF } from '@/lib/csrf'
@@ -35,18 +36,18 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    const where: any = {}
+    const where: Prisma.StockOpnameWhereInput = {}
 
     if (search) {
       where.OR = [
-        { item: { code: { contains: search, mode: 'insensitive' } } },
-        { item: { name: { contains: search, mode: 'insensitive' } } },
-        { notes: { contains: search, mode: 'insensitive' } },
+        { item: { code: { contains: search } } },
+        { item: { name: { contains: search } } },
+        { notes: { contains: search } },
       ]
     }
 
-    if (status) {
-      where.status = status
+    if (status && ['PENDING', 'RECONCILED', 'CANCELLED'].includes(status)) {
+      where.status = status as OpnameStatus
     }
 
     if (startDate || endDate) {

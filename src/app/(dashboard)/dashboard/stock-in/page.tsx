@@ -97,6 +97,8 @@ export default function StockInPage() {
     isActive: true,
     limit: 1000,
   })
+
+  const createMutation = useCreateStockIn({
     onSuccess: () => {
       showSuccess('Berhasil', 'Stok masuk berhasil dicatat')
       setIsDialogOpen(false)
