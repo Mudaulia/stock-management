@@ -678,9 +678,11 @@ See [Authentication & Session](#2-authentication--session) for full details.
 **Response** (200):
 ```json
 {
-  "data": { "deletedCount": 2 }
+  "data": { "deletedCount": 2, "skippedCount": 1 }
 }
 ```
+
+> `deletedCount` = jumlah item yang benar-benar dinonaktifkan; `skippedCount` = item dalam `ids` yang sudah nonaktif sebelumnya atau tidak ditemukan.
 
 **Note**: This is a **SOFT DELETE** — sets `isActive` to `false` for all matching items (same semantics as single-item delete). Stock transactions and stock opnames are permanent history (see `docs/business/INVENTORY-RULES.md`) and are never deleted. Audit logs (`DELETE`, entity `ITEM`) are created per item inside a transaction.
 
@@ -1253,7 +1255,7 @@ Returns most recent 5 transactions across all types.
 | limit | number | No | 50 | Per page |
 | search | string | No | - | Search by code or name |
 | lowStockOnly | boolean | No | false | Show only low/out of stock items |
-| isActive | boolean | No | true | Filter by active status |
+| isActive | boolean | No | all | Filter by active status. Tanpa parameter, semua item (aktif & nonaktif) ikut muncul. Gunakan `isActive=true` atau `isActive=false` untuk memfilter. |
 
 **Response** (200):
 ```json

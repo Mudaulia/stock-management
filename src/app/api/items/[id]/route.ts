@@ -4,13 +4,23 @@ import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 import { handleApiError, successResponse } from '@/lib/api-response'
 import { verifyCSRF } from '@/lib/csrf'
+import { UNIT_OPTIONS } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
+
+const unitSchema = z
+  .string()
+  .transform((val) => val.trim().toUpperCase())
+  .pipe(
+    z.enum(UNIT_OPTIONS, {
+      message: `Satuan harus salah satu dari: ${UNIT_OPTIONS.join(', ')}`,
+    })
+  )
 
 const itemUpdateSchema = z.object({
   code: z.string().min(1).max(50).optional(),
   name: z.string().min(1).max(255).optional(),
-  unit: z.string().min(1).max(50).optional(),
+  unit: unitSchema.optional(),
   minStock: z.number().int().min(0).optional(),
   description: z.string().optional(),
   isActive: z.boolean().optional(),

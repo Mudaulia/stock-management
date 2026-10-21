@@ -4,13 +4,23 @@ import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
 import { verifyCSRF } from '@/lib/csrf'
+import { UNIT_OPTIONS } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
+
+const unitSchema = z
+  .string()
+  .transform((val) => val.trim().toUpperCase())
+  .pipe(
+    z.enum(UNIT_OPTIONS, {
+      message: `Satuan harus salah satu dari: ${UNIT_OPTIONS.join(', ')}`,
+    })
+  )
 
 const itemCreateSchema = z.object({
   code: z.string().min(1, 'Kode barang wajib diisi').max(50),
   name: z.string().min(1, 'Nama barang wajib diisi').max(255),
-  unit: z.string().min(1, 'Satuan wajib diisi').max(50),
+  unit: unitSchema,
   minStock: z.number().int().min(0).default(0),
 
   /*
@@ -152,14 +162,14 @@ export async function DELETE(request: NextRequest) {
      * Stock transactions and stock opnames are permanent history
      * (see docs/business/INVENTORY-RULES.md) and must never be deleted.
      */
-    await prisma.$transaction(async (tx) => {
+    const deletedCount = await prisma.$transaction(async (tx) => {
       const items = await tx.item.findMany({
         where: { id: { in: ids }, isActive: true },
         select: { id: true, code: true, name: true },
       })
 
       if (items.length === 0) {
-        return
+        return 0
       }
 
       await tx.item.updateMany({
@@ -179,9 +189,14 @@ export async function DELETE(request: NextRequest) {
           },
         })
       }
+
+      // Hanya hitung item yang benar-benar dinonaktifkan
+      return items.length
     })
 
-    return NextResponse.json(successResponse({ deletedCount: ids.length }))
+    return NextResponse.json(
+      successResponse({ deletedCount, skippedCount: ids.length - deletedCount })
+    )
   } catch (error) {
     return handleApiError(error)
   }

@@ -33,7 +33,7 @@ erDiagram
         string id PK "CUID"
         string code UK "Unique, e.g. SP-001"
         string name
-        string unit "PCS, SET, LITER, UNIT"
+        string unit "Whitelist: PCS, SET, LITER, UNIT, METER, KG, BOX, PACK"
         int minStock "Default: 0"
         int currentStock "Default: 0"
         string description
@@ -115,7 +115,7 @@ erDiagram
 | id | CHAR(25) | PK, CUID | Primary key |
 | code | VARCHAR(50) | UK, NOT NULL | Business code (SP-001) |
 | name | VARCHAR(255) | NOT NULL | Item name |
-| unit | VARCHAR(50) | NOT NULL | Unit of measure |
+| unit | VARCHAR(50) | NOT NULL | Unit of measure — enum tertutup: PCS, SET, LITER, UNIT, METER, KG, BOX, PACK (divalidasi server-side) |
 | min_stock | INT | NOT NULL, DEFAULT 0 | Minimum threshold |
 | current_stock | INT | NOT NULL, DEFAULT 0 | Real-time quantity |
 | description | TEXT | NULLABLE | Optional details |
@@ -189,12 +189,12 @@ erDiagram
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | CHAR(25) | PK, CUID | Primary key |
-| user_id | CHAR(25) | FK, NULLABLE | Null for system actions |
+| user_id | CHAR(25) | Indexed, NULLABLE | Referensi logis ke `users.id` (TANPA FK constraint — audit log bersifat append-only forensik; null for system actions) |
 | action | VARCHAR(50) | NOT NULL | CREATE, UPDATE, DELETE, LOGIN, RECONCILE |
 | entity | VARCHAR(50) | NOT NULL | ITEM, STOCK_TRANSACTION, USER, etc |
 | entity_id | CHAR(25) | NOT NULL | Affected record ID |
-| old_data | JSON | NULLABLE | Previous state |
-| new_data | JSON | NULLABLE | New state |
+| oldData | JSON | NULLABLE | Previous state (nama kolom aktual: camelCase, tanpa @map — berbeda konvensi snake_case kolom lain) |
+| newData | JSON | NULLABLE | New state (camelCase, sesuai skema Prisma) |
 | ip_address | VARCHAR(45) | NULLABLE | IPv4/IPv6 |
 | user_agent | TEXT | NULLABLE | Browser info |
 | created_at | DATETIME | NOT NULL, DEFAULT NOW() | |
@@ -202,7 +202,7 @@ erDiagram
 **Indexes**: `idx_audit_logs_user_id`, `idx_audit_logs_entity`, `idx_audit_logs_created_at`
 
 **Foreign Keys**:
-- `user_id` → `users.id` (ON DELETE SET NULL)
+- Tidak ada FK constraint di tabel ini. `user_id` adalah referensi logis (indexed) ke `users.id`; tidak menggunakan `ON DELETE SET NULL` agar audit log tetap append-only tanpa dependensi cascade.
 
 ---
 
@@ -234,8 +234,12 @@ User (1) ──────< (N) AuditLog - userId
 4. **Opname**: Capture `systemStock = item.currentStock` at creation time
 5. **Reconcile**: `item.currentStock = opname.physicalStock` (only ADMIN, status PENDING → RECONCILIED)
 6. **Soft Delete**: `isActive = false` instead of hard delete for User & Item
-7. **Unique Code**: `Item.code` must be unique across active items
+7. **Unique Code**: `Item.code` unique secara global (termasuk item nonaktif) — kode barang yang pernah terpakai di riwayat transaksi tidak boleh didaur ulang agar riwayat laporan tetap ambigu-free
 8. **Role Hierarchy**: ADMIN > WAREHOUSE_STAFF > VIEWER
+
+**Planned Indexes** (ditunda sampai volume data membesar; lihat `docs/audits/2026-10-21-comprehensive-docs-vs-implementation.md`):
+- `stock_transactions.created_by_id` — filter/orderBy transaksi per user (tabel yang tumbuh paling cepat)
+- `users.role` — filter user per role (opsional, tabel kecil)
 
 ## Migration Commands
 

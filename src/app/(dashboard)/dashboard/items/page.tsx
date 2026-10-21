@@ -58,14 +58,13 @@ import { bem, bemVariant } from "@/lib/bem";
 import { useItems, useCreateItem, useUpdateItem, useDeleteItem, useBulkDeleteItems, useExportItems } from "@/hooks/use-api";
 import { useAuth } from "@/hooks/use-auth";
 import { itemSchema } from "@/lib/schemas";
+import { UNIT_OPTIONS as UNITS } from "@/lib/constants";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { useKeyboardNavigation, useRowSelection, useUnsavedChangesWarning, useFormDirtyTracking, useDebounce } from "@/hooks";
 import { EmptyState, NoData } from "@/components/ui/empty-state";
 
 type ItemForm = z.infer<typeof itemSchema>;
 type Item = z.infer<typeof itemSchema>;
-
-const UNITS = ["PCS", "SET", "LITER", "UNIT", "METER", "KG", "BOX", "PACK"];
 
 export default function ItemsPage() {
   const router = useRouter();
