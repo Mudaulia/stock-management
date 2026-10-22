@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { handleApiError, paginatedResponse } from "@/lib/api-response";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
+
+const querySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  search: z.string().optional().default(""),
+  includeZeroStock: z
+    .string()
+    .optional()
+    .transform((val) => val === "true"),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,10 +24,11 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const search = searchParams.get("search") || "";
-    const includeZeroStock = searchParams.get("includeZeroStock") === "true";
+    const query = querySchema.parse(Object.fromEntries(searchParams));
+    const page = query.page;
+    const limit = query.limit;
+    const search = query.search;
+    const includeZeroStock = query.includeZeroStock;
 
     const skip = (page - 1) * limit;
 

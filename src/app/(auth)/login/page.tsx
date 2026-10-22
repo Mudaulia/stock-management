@@ -1,5 +1,8 @@
 "use client";
 
+import { setCSRFClientToken } from "@/lib/csrf-client";
+
+
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -66,6 +69,13 @@ function LoginForm() {
 
       if (!response.ok) {
         throw new Error(result.message || "Login gagal");
+      }
+
+      // Simpan CSRF token dari response header untuk dipakai mutasi berikutnya
+      // (header-only double-submit — cookie httpOnly tidak bisa dibaca JS).
+      const csrfToken = response.headers.get("x-csrf-token");
+      if (csrfToken) {
+        setCSRFClientToken(csrfToken);
       }
 
       // Hormati ?redirect= hanya untuk path internal (cegah open redirect).

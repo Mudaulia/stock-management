@@ -1,18 +1,12 @@
 import bcrypt from "bcryptjs";
-import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "./prisma";
 import { generateCSRFToken } from "./csrf";
+import { createJwt, verifyJwt, JWTPayload } from "./jwt";
 
-const JWT_EXPIRY = "7d";
+export type { JWTPayload };
+
 const AUTH_COOKIE_NAME = "auth-token";
-
-export interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-  username: string;
-}
 
 export interface ServerSession {
   user: {
@@ -23,23 +17,6 @@ export interface ServerSession {
     role: string;
     isActive: boolean;
   };
-}
-
-function getJwtSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET;
-
-  if (!secret) {
-    throw new Error(
-      "JWT_SECRET environment variable is required. " +
-        "Set a random secret with at least 32 characters.",
-    );
-  }
-
-  if (secret.length < 32) {
-    throw new Error("JWT_SECRET must be at least 32 characters long.");
-  }
-
-  return new TextEncoder().encode(secret);
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -54,35 +31,11 @@ export async function verifyPassword(
 }
 
 export async function createToken(payload: JWTPayload): Promise<string> {
-  return new SignJWT({ ...payload })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(JWT_EXPIRY)
-    .sign(getJwtSecret());
+  return createJwt(payload);
 }
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
-  try {
-    const { payload } = await jwtVerify(token, getJwtSecret());
-
-    if (
-      typeof payload.userId !== "string" ||
-      typeof payload.email !== "string" ||
-      typeof payload.role !== "string" ||
-      typeof payload.username !== "string"
-    ) {
-      return null;
-    }
-
-    return {
-      userId: payload.userId,
-      email: payload.email,
-      role: payload.role,
-      username: payload.username,
-    };
-  } catch {
-    return null;
-  }
+  return verifyJwt(token);
 }
 
 export async function getSession(): Promise<JWTPayload | null> {

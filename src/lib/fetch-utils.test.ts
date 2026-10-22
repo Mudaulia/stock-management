@@ -15,15 +15,25 @@ const itemSchema = z.object({
   name: z.string(),
 });
 
+// Mock response minimal dengan `headers` (dipakai wrapper untuk menangkap
+// CSRF token dari response header).
+const mockResponse = (
+  body: unknown,
+  init: { ok?: boolean; status?: number; statusText?: string } = {},
+) => ({
+  ok: init.ok ?? true,
+  status: init.status ?? 200,
+  statusText: init.statusText ?? "OK",
+  headers: new Headers(),
+  json: () => Promise.resolve(body),
+});
+
 describe("fetchWithZod", () => {
   it("returns ok:true with validated data for a valid success response", async () => {
     const body = { data: { id: "1", name: "Item A" } };
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      json: () => Promise.resolve(body),
-    });
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(mockResponse(body));
 
     const result = await fetchWithZod(
       "/api/items/1",
@@ -35,16 +45,14 @@ describe("fetchWithZod", () => {
   });
 
   it("returns ok:true with pagination when present", async () => {
-    const body = {
-      data: [{ id: "1", name: "Item A" }],
-      pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
-    };
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      json: () => Promise.resolve(body),
-    });
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(
+        mockResponse({
+          data: [{ id: "1", name: "Item A" }],
+          pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+        }),
+      );
 
     const result = await fetchWithZod(
       "/api/items",
@@ -56,16 +64,14 @@ describe("fetchWithZod", () => {
   });
 
   it("parses a standardized error envelope", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 400,
-      statusText: "Bad Request",
-      json: () =>
-        Promise.resolve({
-          message: "Validasi gagal",
-          code: "VALIDATION_ERROR",
-        }),
-    });
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(
+        mockResponse(
+          { message: "Validasi gagal", code: "VALIDATION_ERROR" },
+          { ok: false, status: 400, statusText: "Bad Request" },
+        ),
+      );
 
     const result = await fetchWithZod(
       "/api/items",
@@ -81,12 +87,14 @@ describe("fetchWithZod", () => {
   });
 
   it("falls back to plain message body on non-standard errors", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      statusText: "Internal Server Error",
-      json: () => Promise.resolve({ message: "Kesalahan server" }),
-    });
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(
+        mockResponse(
+          { message: "Kesalahan server" },
+          { ok: false, status: 500, statusText: "Internal Server Error" },
+        ),
+      );
 
     const result = await fetchWithZod(
       "/api/items",
@@ -98,12 +106,9 @@ describe("fetchWithZod", () => {
   });
 
   it("flags schema mismatch on success response with wrong shape", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      json: () => Promise.resolve({ data: { id: 1, name: 2 } }),
-    });
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(mockResponse({ data: { id: 1, name: 2 } }));
 
     const result = await fetchWithZod(
       "/api/items",
@@ -128,12 +133,9 @@ describe("fetchWithZod", () => {
   });
 
   it("sends credentials include by default", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: "OK",
-      json: () => Promise.resolve({ data: { id: "1", name: "A" } }),
-    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(mockResponse({ data: { id: "1", name: "A" } }));
     global.fetch = fetchMock;
 
     await fetchWithZod("/api/items", apiSuccessSchema(itemSchema));

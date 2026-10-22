@@ -1,4 +1,8 @@
 import { z, ZodError, ZodTypeAny } from "zod";
+import {
+  captureCSRFTokenFromResponse,
+  csrfHeader,
+} from "@/lib/csrf-client";
 
 /**
  * Standardized API response shape (server-side).
@@ -159,6 +163,10 @@ export async function fetchWithZod<T>(
     const fetchInit: RequestInit = {
       ...init,
       credentials: "include" as RequestCredentials,
+      headers: {
+        ...init?.headers,
+        ...csrfHeader(),
+      },
     };
     // Timeout default 30 detik untuk mencegah request menggantung tanpa batas,
     // kecuali pemanggil menyediakan signal sendiri (mis. pembatalan React Query).
@@ -166,6 +174,7 @@ export async function fetchWithZod<T>(
       fetchInit.signal = AbortSignal.timeout(30_000);
     }
     const response = await fetch(input, fetchInit);
+    captureCSRFTokenFromResponse(response);
     const body = await response.json();
 
     if (!response.ok) {

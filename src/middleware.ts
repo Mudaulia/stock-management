@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifyToken, JWTPayload } from "@/lib/auth";
+import { verifyToken } from "@/lib/jwt";
 
 const PUBLIC_PATHS = ["/login", "/api/auth/login"];
 

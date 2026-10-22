@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-response";
+import { buildCsv } from "@/lib/csv";
 import { verifyCSRF } from "@/lib/csrf";
 
 export const dynamic = "force-dynamic";
@@ -101,12 +102,7 @@ export async function GET(request: NextRequest) {
       new Date(item.updatedAt).toLocaleString("id-ID"),
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) =>
-        row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","),
-      ),
-    ].join("\n");
+    const csvContent = buildCsv(headers, rows);
 
     return new NextResponse(csvContent, {
       headers: {

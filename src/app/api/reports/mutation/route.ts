@@ -7,8 +7,25 @@ import {
   paginatedResponse,
   successResponse,
 } from "@/lib/api-response";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
+
+const dateString = z
+  .string()
+  .refine((val) => !Number.isNaN(new Date(val).getTime()), {
+    message: "Format tanggal tidak valid",
+  });
+
+const querySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  search: z.string().optional().default(""),
+  type: z.string().optional().default(""),
+  startDate: dateString.optional(),
+  endDate: dateString.optional(),
+  itemId: z.string().optional(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,13 +35,14 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const search = searchParams.get("search") || "";
-    const type = searchParams.get("type") || "";
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
-    const itemId = searchParams.get("itemId");
+    const query = querySchema.parse(Object.fromEntries(searchParams));
+    const page = query.page;
+    const limit = query.limit;
+    const search = query.search;
+    const type = query.type;
+    const startDate = query.startDate;
+    const endDate = query.endDate;
+    const itemId = query.itemId;
 
     const skip = (page - 1) * limit;
 

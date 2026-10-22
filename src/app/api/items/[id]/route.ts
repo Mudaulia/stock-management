@@ -182,7 +182,11 @@ export async function DELETE(
   try {
     const user = await getCurrentUser();
 
-    if (!user || user.role !== "ADMIN") {
+    if (!user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    if (user.role !== "ADMIN") {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 

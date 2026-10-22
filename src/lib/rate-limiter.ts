@@ -50,6 +50,45 @@ export interface RateLimitResult {
   total: number;
 }
 
+/**
+ * SEC-007 fallback: in-memory sliding-window limiter yang dipakai ketika
+ * Redis tidak tersedia. Sebelumnya rate limit fail-open penuh — sekarang
+ * brute-force protection tetap aktif (per-instance) selama Redis down.
+ */
+const memoryStore = new Map<string, number[]>();
+const MEMORY_MAX_KEYS = 10_000;
+
+function memoryRateLimit(
+  key: string,
+  config: RateLimitConfig,
+  now: number,
+): RateLimitResult {
+  const windowStart = now - config.windowMs;
+  let timestamps = memoryStore.get(key);
+
+  if (timestamps) {
+    timestamps = timestamps.filter((t) => t > windowStart);
+  } else {
+    // Bound memory usage sederhana untuk penggantian Map
+    if (memoryStore.size >= MEMORY_MAX_KEYS) {
+      const firstKey = memoryStore.keys().next().value;
+      if (firstKey !== undefined) memoryStore.delete(firstKey);
+    }
+    timestamps = [];
+  }
+
+  const success = timestamps.length < config.maxRequests;
+  if (success) timestamps.push(now);
+  memoryStore.set(key, timestamps);
+
+  return {
+    success,
+    remaining: Math.max(0, config.maxRequests - timestamps.length),
+    resetTime: now + config.windowMs,
+    total: config.maxRequests,
+  };
+}
+
 export async function rateLimit(
   identifier: string,
   config: RateLimitConfig,
@@ -61,13 +100,8 @@ export async function rateLimit(
   try {
     await ensureConnected();
   } catch {
-    // If Redis is not available, allow the request (fail-open for availability)
-    return {
-      success: true,
-      remaining: config.maxRequests,
-      resetTime: now + config.windowMs,
-      total: config.maxRequests,
-    };
+    // Redis unavailable — gunakan fallback in-memory, bukan fail-open penuh.
+    return memoryRateLimit(key, config, now);
   }
 
   const pipeline = redis.pipeline();
@@ -80,17 +114,12 @@ export async function rateLimit(
   try {
     results = await pipeline.exec();
   } catch {
-    // Pipeline failures (e.g. connection dropped mid-request) also fail open
+    // Pipeline failures (e.g. connection dropped mid-request) also fall back
     results = null;
   }
 
   if (!results) {
-    return {
-      success: true,
-      remaining: config.maxRequests,
-      resetTime: now + config.windowMs,
-      total: config.maxRequests,
-    };
+    return memoryRateLimit(key, config, now);
   }
 
   const currentCount = (results[1][1] as number) || 0;

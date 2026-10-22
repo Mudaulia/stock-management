@@ -1,6 +1,10 @@
 "use client";
 
 import { FetchResult, Pagination } from "@/lib/fetch-utils";
+import {
+  captureCSRFTokenFromResponse,
+  csrfHeader,
+} from "@/lib/csrf-client";
 
 // ============================================
 // Query Keys Factory
@@ -124,11 +128,15 @@ export async function mutateJson(
 ): Promise<unknown> {
   const response = await fetch(url, {
     method,
-    headers:
-      body !== undefined ? { "Content-Type": "application/json" } : undefined,
+    headers: {
+      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+      // CSRF double-submit: header-only token (server tidak menerima dari cookie)
+      ...csrfHeader(),
+    },
     credentials: "include",
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+  captureCSRFTokenFromResponse(response);
   const json = await response.json();
   if (!response.ok) throw new Error(json.message || fallbackError);
   return json;

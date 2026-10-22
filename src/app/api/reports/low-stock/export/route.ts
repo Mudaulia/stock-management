@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { handleApiError } from "@/lib/api-response";
+import { buildCsv } from "@/lib/csv";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -111,12 +112,7 @@ export async function GET(request: NextRequest) {
       new Date(item.updatedAt).toLocaleString("id-ID"),
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) =>
-        row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","),
-      ),
-    ].join("\n");
+    const csvContent = buildCsv(headers, rows);
 
     return new NextResponse(csvContent, {
       headers: {

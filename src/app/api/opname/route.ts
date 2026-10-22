@@ -40,12 +40,24 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const search = searchParams.get("search") || "";
-    const status = searchParams.get("status") || "";
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
+    // Validasi query params via zod (konsisten dengan report routes):
+    // limit dibatasi, page/limit selalu angka valid.
+    const query = z
+      .object({
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(100).default(10),
+        search: z.string().optional().default(""),
+        status: z.string().optional().default(""),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      })
+      .parse(Object.fromEntries(searchParams));
+    const page = query.page;
+    const limit = query.limit;
+    const search = query.search;
+    const status = query.status;
+    const startDate = query.startDate;
+    const endDate = query.endDate;
 
     const skip = (page - 1) * limit;
 
@@ -65,8 +77,14 @@ export async function GET(request: NextRequest) {
 
     if (startDate || endDate) {
       where.opnameDate = {};
-      if (startDate) where.opnameDate.gte = new Date(startDate);
-      if (endDate) where.opnameDate.lte = new Date(endDate);
+      const parsedStart = startDate ? new Date(startDate) : null;
+      const parsedEnd = endDate ? new Date(endDate) : null;
+      if (parsedStart && !Number.isNaN(parsedStart.getTime())) {
+        where.opnameDate.gte = parsedStart;
+      }
+      if (parsedEnd && !Number.isNaN(parsedEnd.getTime())) {
+        where.opnameDate.lte = parsedEnd;
+      }
     }
 
     const [opnames, total] = await Promise.all([

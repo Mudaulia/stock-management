@@ -3,8 +3,20 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { handleApiError, paginatedResponse } from "@/lib/api-response";
 import type { Prisma } from "@prisma/client";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
+
+const querySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  search: z.string().optional().default(""),
+  lowStockOnly: z
+    .string()
+    .optional()
+    .transform((val) => val === "true"),
+  isActive: z.string().optional(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,11 +26,12 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const search = searchParams.get("search") || "";
-    const lowStockOnly = searchParams.get("lowStockOnly") === "true";
-    const isActiveParam = searchParams.get("isActive");
+    const query = querySchema.parse(Object.fromEntries(searchParams));
+    const page = query.page;
+    const limit = query.limit;
+    const search = query.search;
+    const lowStockOnly = query.lowStockOnly;
+    const isActiveParam = query.isActive;
 
     const skip = (page - 1) * limit;
 

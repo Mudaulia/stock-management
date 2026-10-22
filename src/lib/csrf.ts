@@ -12,6 +12,17 @@ if (!CSRF_SECRET || CSRF_SECRET.length < 32) {
   );
 }
 
+if (
+  process.env.NODE_ENV === "production" &&
+  CSRF_SECRET ===
+    "your-super-secret-key-change-in-production-min-32-characters-long"
+) {
+  throw new Error(
+    "CSRF_SECRET (or JWT_SECRET) is still the documented placeholder value. " +
+      "Generate a real secret (e.g. openssl rand -base64 48) before deploying.",
+  );
+}
+
 const secretKey = new TextEncoder().encode(CSRF_SECRET);
 
 export interface CSRFTokenPayload {
@@ -42,15 +53,11 @@ export async function verifyCSRFToken(
 }
 
 export function getCSRFTokenFromRequest(request: NextRequest): string | null {
-  // Check header first (for API calls)
-  const headerToken = request.headers.get(CSRF_HEADER_NAME);
-  if (headerToken) return headerToken;
-
-  // Check cookie (for form submissions)
-  const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
-  if (cookieToken) return cookieToken;
-
-  return null;
+  // Header-only: token dari cookie TIDAK diterima. Cookie dikirim otomatis
+  // oleh browser sehingga tidak membentuk double-submit yang efektif.
+  // Client wajib mengirim token via header `x-csrf-token` (diterima dari
+  // header respons login / endpoint csrf-token).
+  return request.headers.get(CSRF_HEADER_NAME);
 }
 
 export function setCSRFTokenCookie(
@@ -105,11 +112,18 @@ export async function verifyCSRF(
 
   const payload = await verifyCSRFToken(token);
   if (!payload || payload.userId !== session.userId) {
+    // Token invalid/expired — generate token baru agar client bisa retry
+    // dengan token yang segar (dikirim via response header).
+    const freshToken = await generateCSRFToken(session.userId);
     return {
       valid: false,
-      response: NextResponse.json(
-        { message: "Invalid CSRF token" },
-        { status: 403 },
+      userId: session.userId,
+      response: addCSRFHeaders(
+        NextResponse.json(
+          { message: "Invalid or expired CSRF token" },
+          { status: 403 },
+        ),
+        freshToken,
       ),
     };
   }

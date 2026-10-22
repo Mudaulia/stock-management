@@ -3,11 +3,30 @@ import { hashPassword } from '../src/lib/auth'
 
 const prisma = new PrismaClient()
 
+/**
+ * Seed password diambil dari environment variable.
+ * Fallback default HANYA untuk development; di production seed gagal
+ * jika password tidak disediakan (mencegah kredensial lemah hardcoded).
+ */
+function getSeedPassword(name: string, envVar: string): string {
+  const value = process.env[envVar]
+  if (value) return value
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      `${envVar} wajib diset saat menjalankan seed di production (mencegah kredensial lemah)`
+    )
+  }
+  console.warn(
+    `⚠️  ${envVar} tidak diset — memakai password default untuk ${name}. Jangan gunakan default ini di production.`
+  )
+  return `${name}123`
+}
+
 async function main() {
   console.log('🌱 Starting database seed...')
 
   // Create admin user
-  const adminPassword = await hashPassword('admin123')
+  const adminPassword = await hashPassword(getSeedPassword('admin', 'SEED_ADMIN_PASSWORD'))
   const admin = await prisma.user.upsert({
     where: { email: 'admin@stockapp.com' },
     update: {},
@@ -23,7 +42,7 @@ async function main() {
   console.log('✅ Created admin user:', admin.email)
 
   // Create warehouse staff user
-  const staffPassword = await hashPassword('staff123')
+  const staffPassword = await hashPassword(getSeedPassword('staff', 'SEED_STAFF_PASSWORD'))
   const staff = await prisma.user.upsert({
     where: { email: 'staff@stockapp.com' },
     update: {},
@@ -39,7 +58,7 @@ async function main() {
   console.log('✅ Created staff user:', staff.email)
 
   // Create viewer user
-  const viewerPassword = await hashPassword('viewer123')
+  const viewerPassword = await hashPassword(getSeedPassword('viewer', 'SEED_VIEWER_PASSWORD'))
   const viewer = await prisma.user.upsert({
     where: { email: 'viewer@stockapp.com' },
     update: {},
