@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -53,6 +53,7 @@ import { SkeletonTable } from '@/components/ui/skeleton'
 import { useKeyboardNavigation, useRowSelection } from '@/hooks/use-keyboard-navigation'
 import { useUnsavedChangesWarning, useFormDirtyTracking } from '@/hooks/use-unsaved-changes'
 import { EmptyState, NoData } from '@/components/ui/empty-state'
+import { useDebounce } from '@/hooks'
 
 const opnameFormSchema = z.object({
   itemId: z.string().min(1, 'Barang wajib dipilih'),
@@ -73,9 +74,15 @@ export default function OpnamePage() {
   const [isReconciling, setIsReconciling] = useState(false)
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 })
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [statusFilter, setStatusFilter] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+
+  // Reset ke halaman 1 saat filter berubah (hindari hasil kosong karena masih di halaman akhir)
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }, [debouncedSearch, statusFilter, startDate, endDate])
   const [selectedOpname, setSelectedOpname] = useState<StockOpname | null>(null)
   const [showReconcileDialog, setShowReconcileDialog] = useState(false)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
@@ -101,7 +108,7 @@ export default function OpnamePage() {
   const { data: opnamesData, isLoading, isError, error, refetch: refetchOpnames } = useOpname({
     page: pagination.page,
     limit: pagination.limit,
-    search,
+    search: debouncedSearch,
     status: statusFilter || undefined,
     startDate: startDate || undefined,
     endDate: endDate || undefined,

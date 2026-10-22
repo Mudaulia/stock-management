@@ -127,7 +127,6 @@ export default function ItemsPage() {
     onSuccess: () => {
       showSuccess("Berhasil ditambahkan");
       setIsDialogOpen(false);
-      refetch();
     },
     onError: (err) => showError("Error", err.message),
   });
@@ -136,7 +135,6 @@ export default function ItemsPage() {
     onSuccess: () => {
       showSuccess("Berhasil diupdate");
       setIsDialogOpen(false);
-      refetch();
     },
     onError: (err) => showError("Error", err.message),
   });
@@ -145,7 +143,6 @@ export default function ItemsPage() {
     onSuccess: () => {
       showSuccess("Berhasil dihapus");
       setDeleteConfirm(null);
-      refetch();
     },
     onError: (err) => showError("Error", err.message),
   });
@@ -154,7 +151,6 @@ export default function ItemsPage() {
     onSuccess: () => {
       showSuccess("Berhasil menghapus item terpilih");
       clearSelection();
-      refetch();
     },
     onError: (err) => showError("Error", err.message),
   });

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -43,6 +43,7 @@ import { SkeletonTable } from '@/components/ui/skeleton'
 import { useKeyboardNavigation, useRowSelection } from '@/hooks/use-keyboard-navigation'
 import { useUnsavedChangesWarning, useFormDirtyTracking } from '@/hooks/use-unsaved-changes'
 import { EmptyState, NoData } from '@/components/ui/empty-state'
+import { useDebounce } from '@/hooks'
 
 const stockAdjustmentSchema = z.object({
   itemId: z.string().min(1, 'Barang wajib dipilih'),
@@ -62,8 +63,14 @@ export default function StockAdjustmentPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 })
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+
+  // Reset ke halaman 1 saat filter berubah (hindari hasil kosong karena masih di halaman akhir)
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }, [debouncedSearch, startDate, endDate])
   const [selectedItemStock, setSelectedItemStock] = useState<number | null>(null)
 
   const {
@@ -88,7 +95,7 @@ export default function StockAdjustmentPage() {
   const { data: transactionsData, isLoading, isError, error, refetch: refetchTransactions } = useStockAdjustment({
     page: pagination.page,
     limit: pagination.limit,
-    search,
+    search: debouncedSearch,
     startDate: startDate || undefined,
     endDate: endDate || undefined,
   })

@@ -10,10 +10,13 @@ export function QueryProvider({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 1000 * 60 * 5, // 5 minutes
+            staleTime: 1000 * 30, // 30 detik: cukup untuk mencegah fetch berlebihan saat navigasi,
+            // tapi tetap segar untuk data stok multi-user
             gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
             retry: 1,
-            refetchOnWindowFocus: false,
+            // refetch saat kembali ke tab: data stok bisa berubah oleh user lain
+            refetchOnWindowFocus: true,
+            refetchOnReconnect: true,
           },
         },
       })

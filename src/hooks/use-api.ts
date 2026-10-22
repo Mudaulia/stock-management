@@ -173,10 +173,11 @@ export function useCreateItem(
       if (!response.ok) throw new Error(body.message || 'Failed to create item')
       return body
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
-    },
     ...options,
+    onSuccess: (data, variables, onMutateResult, context) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
+      options?.onSuccess?.(data, variables, onMutateResult, context)
+    },
   })
 }
 
@@ -196,11 +197,12 @@ export function useUpdateItem(
       if (!response.ok) throw new Error(body.message || 'Failed to update item')
       return body
     },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.items.detail(id) })
-    },
     ...options,
+    onSuccess: (data, variables, onMutateResult, context) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.items.detail(variables.id) })
+      options?.onSuccess?.(data, variables, onMutateResult, context)
+    },
   })
 }
 
@@ -218,10 +220,11 @@ export function useDeleteItem(
       if (!response.ok) throw new Error(body.message || 'Failed to delete item')
       return body
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
-    },
     ...options,
+    onSuccess: (data, variables, onMutateResult, context) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
+      options?.onSuccess?.(data, variables, onMutateResult, context)
+    },
   })
 }
 
@@ -242,10 +245,11 @@ export function useBulkDeleteItems(
       if (!response.ok) throw new Error(body.message || 'Failed to delete items')
       return body
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
-    },
     ...options,
+    onSuccess: (data, variables, onMutateResult, context) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
+      options?.onSuccess?.(data, variables, onMutateResult, context)
+    },
   })
 }
 
@@ -414,14 +418,15 @@ export function useCreateStockIn(
       if (!response.ok) throw new Error(body.message || 'Failed to create stock in')
       return body
     },
-    onSuccess: () => {
+    ...options,
+    onSuccess: (data, variables, onMutateResult, context) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stockIn.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.recentTransactions })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.lowStockItems })
+      options?.onSuccess?.(data, variables, onMutateResult, context)
     },
-    ...options,
   })
 }
 
@@ -474,14 +479,15 @@ export function useCreateStockOut(
       if (!response.ok) throw new Error(body.message || 'Failed to create stock out')
       return body
     },
-    onSuccess: () => {
+    ...options,
+    onSuccess: (data, variables, onMutateResult, context) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stockOut.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.recentTransactions })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.lowStockItems })
+      options?.onSuccess?.(data, variables, onMutateResult, context)
     },
-    ...options,
   })
 }
 
@@ -534,14 +540,15 @@ export function useCreateStockAdjustment(
       if (!response.ok) throw new Error(body.message || 'Failed to create stock adjustment')
       return body
     },
-    onSuccess: () => {
+    ...options,
+    onSuccess: (data, variables, onMutateResult, context) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stockAdjustment.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.recentTransactions })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.lowStockItems })
+      options?.onSuccess?.(data, variables, onMutateResult, context)
     },
-    ...options,
   })
 }
 
@@ -609,13 +616,14 @@ export function useCreateOpname(
       if (!response.ok) throw new Error(body.message || 'Failed to create opname')
       return body
     },
-    onSuccess: () => {
+    ...options,
+    onSuccess: (data, variables, onMutateResult, context) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.opname.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.lowStockItems })
       queryClient.invalidateQueries({ queryKey: queryKeys.reports.all })
+      options?.onSuccess?.(data, variables, onMutateResult, context)
     },
-    ...options,
   })
 }
 
@@ -635,14 +643,15 @@ export function useReconcileOpname(
       if (!response.ok) throw new Error(body.message || 'Failed to reconcile opname')
       return body
     },
-    onSuccess: () => {
+    ...options,
+    onSuccess: (data, variables, onMutateResult, context) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.opname.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.items.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.lowStockItems })
       queryClient.invalidateQueries({ queryKey: queryKeys.reports.all })
+      options?.onSuccess?.(data, variables, onMutateResult, context)
     },
-    ...options,
   })
 }
 
@@ -660,12 +669,13 @@ export function useCancelOpname(
       if (!response.ok) throw new Error(body.message || 'Failed to cancel opname')
       return body
     },
-    onSuccess: () => {
+    ...options,
+    onSuccess: (data, variables, onMutateResult, context) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.opname.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats })
       queryClient.invalidateQueries({ queryKey: queryKeys.reports.all })
+      options?.onSuccess?.(data, variables, onMutateResult, context)
     },
-    ...options,
   })
 }
 
@@ -783,14 +793,21 @@ export interface DashboardStats {
   pendingOpnames: number
 }
 
+const dashboardStatsSchema = z.object({
+  totalItems: z.number(),
+  lowStockItems: z.number(),
+  outOfStockItems: z.number(),
+  recentStockIn: z.number(),
+  recentStockOut: z.number(),
+  pendingOpnames: z.number(),
+})
+
 export function useDashboardStats(options?: UseQueryOptions<DashboardStats, Error, DashboardStats, readonly unknown[]>) {
   return useQuery<DashboardStats, Error, DashboardStats, readonly unknown[]>({
     queryKey: queryKeys.dashboard.stats,
     queryFn: async () => {
-      const response = await fetch('/api/dashboard/stats', { credentials: 'include' })
-      const body = await response.json()
-      if (!response.ok) throw new Error(body.message || 'Failed to fetch dashboard stats')
-      return body.data
+      const result = await fetchSingle<DashboardStats>('/api/dashboard/stats', dashboardStatsSchema)
+      return handleFetchResult(result)
     },
     ...options,
   })
@@ -811,14 +828,27 @@ export interface Transaction {
   }
 }
 
+const recentTransactionSchema = z.object({
+  id: z.string(),
+  itemId: z.string(),
+  type: z.enum(['STOCK_IN', 'STOCK_OUT', 'ADJUSTMENT']),
+  quantity: z.number(),
+  notes: z.string().nullable(),
+  transactionDate: z.string().datetime(),
+  createdAt: z.string().datetime(),
+  item: z.object({
+    id: z.string(),
+    name: z.string(),
+    code: z.string(),
+  }),
+})
+
 export function useRecentTransactions(options?: UseQueryOptions<Transaction[], Error, Transaction[], readonly unknown[]>) {
   return useQuery<Transaction[], Error, Transaction[], readonly unknown[]>({
     queryKey: queryKeys.dashboard.recentTransactions,
     queryFn: async () => {
-      const response = await fetch('/api/dashboard/recent-transactions', { credentials: 'include' })
-      const body = await response.json()
-      if (!response.ok) throw new Error(body.message || 'Failed to fetch recent transactions')
-      return body.data
+      const result = await fetchSingle<Transaction[]>('/api/dashboard/recent-transactions', z.array(recentTransactionSchema))
+      return handleFetchResult(result)
     },
     ...options,
   })
@@ -833,14 +863,21 @@ export interface LowStockItem {
   unit: string
 }
 
+const lowStockItemSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  currentStock: z.number(),
+  minStock: z.number(),
+  unit: z.string(),
+})
+
 export function useLowStockItems(options?: UseQueryOptions<LowStockItem[], Error, LowStockItem[], readonly unknown[]>) {
   return useQuery<LowStockItem[], Error, LowStockItem[], readonly unknown[]>({
     queryKey: queryKeys.dashboard.lowStockItems,
     queryFn: async () => {
-      const response = await fetch('/api/dashboard/low-stock-items', { credentials: 'include' })
-      const body = await response.json()
-      if (!response.ok) throw new Error(body.message || 'Failed to fetch low stock items')
-      return body.data
+      const result = await fetchSingle<LowStockItem[]>('/api/dashboard/low-stock-items', z.array(lowStockItemSchema))
+      return handleFetchResult(result)
     },
     ...options,
   })
@@ -911,8 +948,11 @@ export function useCreateUser(
       if (!response.ok) throw new Error(body.message || 'Gagal menambahkan pengguna')
       return body
     },
-    onSuccess: () => invalidateUsers(queryClient),
     ...options,
+    onSuccess: (data, variables, onMutateResult, context) => {
+      invalidateUsers(queryClient)
+      options?.onSuccess?.(data, variables, onMutateResult, context)
+    },
   })
 }
 
@@ -932,7 +972,10 @@ export function useUpdateUser(
       if (!response.ok) throw new Error(body.message || 'Gagal memperbarui pengguna')
       return body
     },
-    onSuccess: () => invalidateUsers(queryClient),
     ...options,
+    onSuccess: (data, variables, onMutateResult, context) => {
+      invalidateUsers(queryClient)
+      options?.onSuccess?.(data, variables, onMutateResult, context)
+    },
   })
 }

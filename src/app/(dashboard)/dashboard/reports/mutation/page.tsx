@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ import { SkeletonTable } from "@/components/ui/skeleton";
 import { useKeyboardNavigation, useRowSelection } from "@/hooks/use-keyboard-navigation";
 import { Download } from "lucide-react";
 import { EmptyState, NoData } from "@/components/ui/empty-state";
+import { useDebounce } from "@/hooks";
 
 type MutationTransaction = z.infer<typeof mutationReportItemSchema>;
 type MutationSummary = z.infer<typeof mutationSummarySchema>;
@@ -40,10 +41,16 @@ type MutationSummary = z.infer<typeof mutationSummarySchema>;
 export default function MutationReportPage() {
   const { showSuccess, showError } = useToast();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [typeFilter, setTypeFilter] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [itemId, setItemId] = useState("");
+
+  // Reset ke halaman 1 saat filter berubah (hindari hasil kosong karena masih di halaman akhir)
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, [debouncedSearch, typeFilter, startDate, endDate, itemId]);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 50,
@@ -55,7 +62,7 @@ export default function MutationReportPage() {
   const { data: reportData, isLoading, isError, error, refetch } = useMutationReport({
     page: pagination.page,
     limit: pagination.limit,
-    search,
+    search: debouncedSearch,
     type: typeFilter || undefined,
     startDate: startDate || undefined,
     endDate: endDate || undefined,

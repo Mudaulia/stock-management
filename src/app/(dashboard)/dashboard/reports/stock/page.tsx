@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,7 @@ import { SkeletonTable } from "@/components/ui/skeleton";
 import { useKeyboardNavigation, useRowSelection } from "@/hooks/use-keyboard-navigation";
 import { Download } from "lucide-react";
 import { EmptyState, NoData } from "@/components/ui/empty-state";
+import { useDebounce } from "@/hooks";
 
 type StockItem = z.infer<typeof stockReportItemSchema>;
 type StockReportSummary = z.infer<typeof stockReportSummarySchema>;
@@ -39,8 +40,14 @@ type StockReportSummary = z.infer<typeof stockReportSummarySchema>;
 export default function StockReportPage() {
   const { showSuccess, showError } = useToast();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [isActiveFilter, setIsActiveFilter] = useState<"all" | "true" | "false">("all");
+
+  // Reset ke halaman 1 saat filter berubah (hindari hasil kosong karena masih di halaman akhir)
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, [debouncedSearch, lowStockOnly, isActiveFilter]);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 50,
@@ -52,7 +59,7 @@ export default function StockReportPage() {
   const { data: reportData, isLoading, isError, error, refetch } = useStockReport({
     page: pagination.page,
     limit: pagination.limit,
-    search,
+    search: debouncedSearch,
     lowStockOnly,
     isActive: isActiveFilter === "all" ? "all" : isActiveFilter,
   });

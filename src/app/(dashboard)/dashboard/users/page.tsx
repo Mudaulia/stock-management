@@ -148,7 +148,6 @@ export default function UsersPage() {
     onSuccess: () => {
       showSuccess("Pengguna berhasil ditambahkan");
       closeDialog();
-      refetch();
     },
     onError: (err) => showError("Error", err.message),
   });
@@ -157,7 +156,6 @@ export default function UsersPage() {
     onSuccess: () => {
       showSuccess("Pengguna berhasil diperbarui");
       closeDialog();
-      refetch();
     },
     onError: (err) => showError("Error", err.message),
   });
@@ -216,7 +214,6 @@ export default function UsersPage() {
           : "Pengguna berhasil dinonaktifkan"
       );
       setToggleConfirm(null);
-      refetch();
     },
     onError: (err) => {
       showError("Error", err.message);
