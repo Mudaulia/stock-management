@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { handleApiError, successResponse } from "@/lib/api-response";
+import { handleApiError, ApiError, successResponse } from "@/lib/api-response";
 import { verifyCSRF } from "@/lib/csrf";
 
 export const dynamic = "force-dynamic";
@@ -129,6 +129,18 @@ export async function PUT(
     const difference = newPhysicalStock - systemStock;
 
     const updatedOpname = await prisma.$transaction(async (tx) => {
+      // Conditional update: only proceed if still PENDING (race vs reconcile).
+      const claim = await tx.stockOpname.updateMany({
+        where: { id, status: "PENDING" },
+        data: { physicalStock: newPhysicalStock, difference },
+      });
+      if (claim.count !== 1) {
+        throw new ApiError(
+          "Hanya opname dengan status PENDING yang dapat diubah",
+          400,
+        );
+      }
+
       const updated = await tx.stockOpname.update({
         where: { id },
         data: {
@@ -226,6 +238,18 @@ export async function DELETE(
     }
 
     const updatedOpname = await prisma.$transaction(async (tx) => {
+      // Conditional update: only proceed if still PENDING (race vs reconcile).
+      const claim = await tx.stockOpname.updateMany({
+        where: { id, status: "PENDING" },
+        data: { status: "CANCELLED" },
+      });
+      if (claim.count !== 1) {
+        throw new ApiError(
+          "Hanya opname dengan status PENDING yang dapat dibatalkan",
+          400,
+        );
+      }
+
       const updated = await tx.stockOpname.update({
         where: { id },
         data: { status: "CANCELLED" },

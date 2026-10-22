@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { handleApiError, successResponse } from "@/lib/api-response";
+import { ApiError, handleApiError, successResponse } from "@/lib/api-response";
 import { verifyCSRF } from "@/lib/csrf";
 
 export const dynamic = "force-dynamic";
@@ -123,13 +123,21 @@ export async function POST(
         throw new StaleOpnameError();
       }
 
-      const updatedOpname = await tx.stockOpname.update({
-        where: {
-          id,
-        },
-        data: {
-          status: "RECONCILED",
-        },
+      // Conditional status claim: only reconcile if still PENDING
+      // (prevents race with update/cancel requests).
+      const claim = await tx.stockOpname.updateMany({
+        where: { id, status: "PENDING" },
+        data: { status: "RECONCILED" },
+      });
+      if (claim.count !== 1) {
+        throw new ApiError(
+          "Hanya opname dengan status PENDING yang dapat direkonsiliasi",
+          400,
+        );
+      }
+
+      const updatedOpname = await tx.stockOpname.findUniqueOrThrow({
+        where: { id },
       });
 
       const reconciliation = await tx.stockReconciliation.create({

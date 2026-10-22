@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { OpnameStatus, type Prisma } from "@prisma/client";
 import { z } from "zod";
 import {
+  ApiError,
   handleApiError,
   paginatedResponse,
   successResponse,
@@ -205,6 +206,29 @@ export async function POST(request: NextRequest) {
     const difference = physicalStock - systemStock;
 
     const opname = await prisma.$transaction(async (tx) => {
+      /*
+       * Serialize concurrent opname creation per item:
+       * lock the item row so two parallel POSTs cannot both
+       * pass the PENDING check below (check-then-write race).
+       */
+      const locked = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM items WHERE id = ${itemId} FOR UPDATE
+      `;
+      if (locked.length === 0) {
+        throw new ApiError("Barang tidak ditemukan", 404);
+      }
+
+      // Re-check PENDING uniqueness inside the lock.
+      const existingPending = await tx.stockOpname.findFirst({
+        where: { itemId, status: "PENDING" },
+      });
+      if (existingPending) {
+        throw new ApiError(
+          "Masih ada opname pending untuk barang ini. Selesaikan atau batalkan terlebih dahulu.",
+          400,
+        );
+      }
+
       const newOpname = await tx.stockOpname.create({
         data: {
           itemId,

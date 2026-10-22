@@ -97,7 +97,9 @@ export function ItemFormDialog({
               <Label htmlFor="unit">Satuan *</Label>
               <Select
                 value={watchedUnit || "PCS"}
-                onValueChange={(v: string) => setValue("unit", v)}
+                onValueChange={(v: string) =>
+                  setValue("unit", v as ItemForm["unit"])
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih satuan" />

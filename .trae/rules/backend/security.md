@@ -206,8 +206,8 @@ Kondisi implementasi aktual berdasarkan audit repository:
 | SEC-02 | `z.coerce.boolean()` di endpoint export | `RESOLVED` (2026-10-21) | Parse eksplisit `val === 'true'` |
 | SEC-03 | Middleware redirect HTML untuk API tanpa token | `RESOLVED` (2026-10-21) | Path `/api` kini mendapat 401 JSON |
 | SEC-04 | Referensi `/register` yang tidak ada | `RESOLVED` (2026-10-21) | Matcher & link login dibersihkan |
-| SEC-05 | Rate limiter fail-open saat Redis down | `OPEN` | Perlu keputusan arsitektur |
+| SEC-05 | Rate limiter fail-open saat Redis down | `RESOLVED` (2026-10-22) | `src/lib/rate-limiter.ts` kini pakai fallback in-memory sliding-window (per-instance) saat Redis down, bukan fail-open |
 | TD-01 | Beberapa `where: any` (type safety) | `OPEN` | Cleanup bertahap |
-| TD-02 | Efektivitas CSRF lemah (frontend tak kirim token header) | `WONT FIX` (sementara) | Mitigasi utama SameSite=Lax; perlu keputusan arsitektur terpisah |
+| TD-02 | Efektivitas CSRF lemah (frontend tak kirim token header) | `RESOLVED` (2026-10-22) | Frontend kini kirim token via header `x-csrf-token` (`src/lib/csrf-client.ts`); token segar diambil dari response login/403 |
 
 Status temuan dikelola di `docs/audits/` — dokumen ini hanya merangkum; audit record adalah source of truth status.

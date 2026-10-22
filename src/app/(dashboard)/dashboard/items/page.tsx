@@ -17,7 +17,6 @@ import {
   useExportItems,
 } from "@/hooks/use-api";
 import { useAuth } from "@/hooks/use-auth";
-import { itemSchema } from "@/lib/schemas";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import {
   useKeyboardNavigation,
@@ -31,6 +30,7 @@ import { ItemsFilter } from "./components/items-filter";
 import { ItemsTable } from "./components/items-table";
 import { ItemFormDialog } from "./components/item-form-dialog";
 import { DeleteConfirmDialog } from "./components/delete-confirm-dialog";
+import { itemFormSchema } from "./components/types";
 import type { Item, ItemForm } from "./components/types";
 
 export default function ItemsPage() {
@@ -55,7 +55,7 @@ export default function ItemsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const form = useForm<ItemForm>({
-    resolver: zodResolver(itemSchema),
+    resolver: zodResolver(itemFormSchema),
     defaultValues: {
       code: "",
       name: "",
@@ -177,7 +177,7 @@ export default function ItemsPage() {
     reset({
       code: item.code,
       name: item.name,
-      unit: item.unit,
+      unit: item.unit as ItemForm["unit"],
       minStock: item.minStock,
       currentStock: item.currentStock,
       description: item.description || "",
