@@ -33,6 +33,8 @@ export default function DashboardPage() {
     refetch: refetchLowStock,
   } = useLowStockItems();
 
+  const canMutate = user?.role === "ADMIN" || user?.role === "WAREHOUSE_STAFF";
+
   if (authLoading) {
     return (
       <div className="space-y-6 animate-pulse">
@@ -57,32 +59,34 @@ export default function DashboardPage() {
             Anda.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href="/dashboard/items">
-            <button className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Tambah Barang
-            </button>
-          </Link>
-          <Link href="/dashboard/stock-in">
-            <button className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors">
-              <ArrowUp className="h-4 w-4" aria-hidden="true" />
-              Stok Masuk
-            </button>
-          </Link>
-          <Link href="/dashboard/stock-out">
-            <button className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors">
-              <ArrowDown className="h-4 w-4" aria-hidden="true" />
-              Stok Keluar
-            </button>
-          </Link>
-          <Link href="/dashboard/opname">
-            <button className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors">
-              <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
-              Opname
-            </button>
-          </Link>
-        </div>
+        {canMutate && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/dashboard/items">
+              <button className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Tambah Barang
+              </button>
+            </Link>
+            <Link href="/dashboard/stock-in">
+              <button className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors">
+                <ArrowUp className="h-4 w-4" aria-hidden="true" />
+                Stok Masuk
+              </button>
+            </Link>
+            <Link href="/dashboard/stock-out">
+              <button className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors">
+                <ArrowDown className="h-4 w-4" aria-hidden="true" />
+                Stok Keluar
+              </button>
+            </Link>
+            <Link href="/dashboard/opname">
+              <button className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted hover:text-foreground transition-colors">
+                <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+                Opname
+              </button>
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Stats Grid */}

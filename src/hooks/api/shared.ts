@@ -96,25 +96,25 @@ export function handleFetchResult<T>(result: FetchResult<T>): T {
 }
 
 export function handleFetchPaginatedResult<T>(
-  result: FetchResult<{
-    data: T[];
-    pagination?: Pagination;
-    summary?: Record<string, unknown>;
-  }>,
+  result: FetchResult<T[]>,
 ): { data: T[]; pagination?: Pagination; summary?: Record<string, unknown> } {
   if (!result.ok) {
     throw new Error(result.message);
   }
-  return result.data;
+  // NOTE: fetchWithZod mengembalikan { ok, data: T[], pagination?, summary? }
+  // — data adalah array langsung, pagination/summary ada di top-level result.
+  // Harus di-reconstruct, bukan me-return result.data (yang hanya array).
+  return { data: result.data, pagination: result.pagination, summary: result.summary };
 }
 
 export function handleFetchPaginatedWithSummaryResult<T, S>(
-  result: FetchResult<{ data: T[]; pagination?: Pagination; summary?: S }>,
+  result: FetchResult<T[]>,
 ): { data: T[]; pagination?: Pagination; summary?: S } {
   if (!result.ok) {
     throw new Error(result.message);
   }
-  return result.data;
+  // Sama seperti handleFetchPaginatedResult: reconstruct envelope.
+  return { data: result.data, pagination: result.pagination, summary: result.summary as S };
 }
 
 /**

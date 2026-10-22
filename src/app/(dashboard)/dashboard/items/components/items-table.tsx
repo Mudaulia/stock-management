@@ -50,6 +50,7 @@ interface ItemsTableProps {
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
   isAdmin: boolean;
+  canEdit: boolean;
   isBulkDeletePending: boolean;
   isExportPending: boolean;
   onBulkDelete: () => void;
@@ -74,6 +75,7 @@ export function ItemsTable({
   onPageChange,
   onLimitChange,
   isAdmin,
+  canEdit,
   isBulkDeletePending,
   isExportPending,
   onBulkDelete,
@@ -232,15 +234,17 @@ export function ItemsTable({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(item);
-                          }}
-                        >
-                          <Edit className="items__dropdown-icon" />
-                          Edit
-                        </DropdownMenuItem>
+                        {canEdit && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEdit(item);
+                            }}
+                          >
+                            <Edit className="items__dropdown-icon" />
+                            Edit
+                          </DropdownMenuItem>
+                        )}
                         {isAdmin && item.isActive && (
                           <DropdownMenuItem
                             onClick={(e) => {

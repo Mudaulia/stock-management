@@ -13,6 +13,7 @@ import { bem } from '@/lib/bem'
 import { useOpname, useCreateOpname, useReconcileOpname, useCancelOpname, useItems } from '@/hooks/use-api'
 import { useKeyboardNavigation, useRowSelection } from '@/hooks/use-keyboard-navigation'
 import { useUnsavedChangesWarning, useFormDirtyTracking } from '@/hooks/use-unsaved-changes'
+import { useAuth } from '@/hooks/use-auth'
 import { useDebounce } from '@/hooks'
 import { CreateOpnameDialog } from './components/create-opname-dialog'
 import { ReconcileDialog } from './components/reconcile-dialog'
@@ -21,6 +22,8 @@ import { OpnameTable } from './components/opname-table'
 import { opnameFormSchema, type OpnameForm, type StockOpname } from './components/types'
 
 export default function OpnamePage() {
+  const { user } = useAuth()
+  const canEdit = user?.role === 'ADMIN' || user?.role === 'WAREHOUSE_STAFF'
   const { showSuccess, showError } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -181,10 +184,12 @@ export default function OpnamePage() {
           <h1 className={bemBlock.e('title')}>Stock Opname</h1>
           <p className={bemBlock.e('subtitle')}>Bandingkan stok fisik dengan stok sistem dan lakukan rekonsiliasi</p>
         </div>
-        <Button onClick={handleOpenCreate} className={bemBlock.e('create-button')}>
-          <Plus className="mr-2 h-4 w-4" />
-          Buat Opname Baru
-        </Button>
+        {canEdit && (
+          <Button onClick={handleOpenCreate} className={bemBlock.e('create-button')}>
+            <Plus className="mr-2 h-4 w-4" />
+            Buat Opname Baru
+          </Button>
+        )}
       </div>
 
       {/* Filters */}

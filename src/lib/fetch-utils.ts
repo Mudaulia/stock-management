@@ -277,18 +277,8 @@ export async function fetchPaginated<T extends ZodTypeAny>(
   url: string,
   dataSchema: T,
   init?: RequestInit,
-): Promise<
-  FetchResult<{
-    data: z.infer<T>[];
-    pagination?: Pagination;
-    summary?: Record<string, unknown>;
-  }>
-> {
-  return fetchWithZod<{
-    data: z.infer<T>[];
-    pagination?: Pagination;
-    summary?: Record<string, unknown>;
-  }>(url, paginatedResponseSchema(dataSchema), init);
+): Promise<FetchResult<z.infer<T>[]>> {
+  return fetchWithZod<z.infer<T>[]>(url, paginatedResponseSchema(dataSchema), init);
 }
 
 /**
@@ -311,18 +301,8 @@ export async function fetchPaginatedWithSummary<
   dataSchema: T,
   summarySchema: S,
   init?: RequestInit,
-): Promise<
-  FetchResult<{
-    data: z.infer<T>[];
-    pagination?: Pagination;
-    summary?: z.infer<S>;
-  }>
-> {
-  return fetchWithZod<{
-    data: z.infer<T>[];
-    pagination?: Pagination;
-    summary?: z.infer<S>;
-  }>(
+): Promise<FetchResult<z.infer<T>[]>> {
+  return fetchWithZod<z.infer<T>[]>(
     url,
     apiSuccessSchemaWithSummary(z.array(dataSchema), summarySchema),
     init,

@@ -492,51 +492,15 @@ Pola UI: sidebar navigasi (9 menu), page header, filter card, data table dengan 
 
 ---
 
-## 7. Gap & Roadmap
+## 7. Batasan & Asumsi
 
-### 7.1 Gap terhadap User Story
-
-| ID | Item | Prioritas | Deskripsi |
-|---|---|---|---|
-| GAP-01 | US-13 — Manajemen Pengguna | Tinggi | **RESOLVED** — halaman & API CRUD pengguna telah diimplementasi (lihat FR-11) |
-| GAP-02 | US-14 — Pengaturan hak akses via UI | Tinggi | **RESOLVED** — role dapat diubah via `/dashboard/users` oleh ADMIN (dengan proteksi self-lockout) |
-| GAP-03 | US-15 — Login via username atau email | Sedang | Implementasi saat ini hanya menerima email |
-| GAP-04 | Menu per-role di sidebar | Sedang | Menu "Pengguna" hanya tampil untuk ADMIN (sidebar.tsx); menu fitur lain tampil untuk semua role (aksi tetap diblokir di server; VIEWER akan mendapat error saat mencoba aksi tulis) |
-| GAP-05 | Link "/register" di halaman login | Rendah | **RESOLVED** — halaman login tidak lagi menautkan ke `/register`; footer menyarankan menghubungi administrator |
-| GAP-06 | US-10 — Ringkasan jumlah masuk/keluar | Rendah | Laporan mutasi menampilkan rincian transaksi; agregasi total per periode perlu dikonfirmasi kelengkapannya |
-
-### 7.2 Roadmap
-
-| Fase | Ruang Lingkup |
-|---|---|
-| Fase 1 | ~~Modul Manajemen Pengguna~~ — **SELESAI** (FR-11 diimplementasi) |
-| Fase 2 | Perbaikan autentikasi: dukung login username/email (link register sudah dihapus — GAP-05 resolved) |
-| Fase 3 | Penyempurnaan laporan (agregasi ringkasan mutasi, format ekspor tambahan) |
-| Fase 4 | Pengetatan keamanan dan konsistensi data (rujukan: laporan audit di `docs/audits/`) |
-
----
-
-## 8. Metrik Keberhasilan
-
-| Metrik | Target | Cara Pengukuran |
-|---|---|---|
-| Selisih stok sistem vs fisik pasca-rekonsiliasi | 0 | Laporan stok opname |
-| Stok negatif di database | 0 (dijamin constraint transaksional) | Query audit berkala |
-| Transaksi kritis tercatat di audit log | 100% | Verifikasi tabel audit_logs |
-| Waktu deteksi barang stok rendah | Real-time via dashboard | Widget stok rendah |
-| Kesalahan validasi lolos ke database | 0 | Isomorphic validation (Zod client + server) |
-
----
-
-## 9. Batasan & Asumsi
-
-### 9.1 Batasan (Constraints)
+### 7.1 Batasan (Constraints)
 
 - Aplikasi bersifat internal (single-company), bukan multi-tenant.
 - Ekspor terbatas pada format CSV.
 - Rate limiting bergantung Redis; sistem tetap berjalan (fail-open) jika Redis tidak tersedia.
 
-### 9.2 Asumsi (Assumptions)
+### 7.2 Asumsi (Assumptions)
 
 - Pengguna mengakses sistem melalui browser modern yang mendukung JavaScript.
 - MySQL dan (opsional) Redis tersedia pada lingkungan deployment.

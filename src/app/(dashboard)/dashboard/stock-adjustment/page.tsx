@@ -35,6 +35,7 @@ import {
 import { Plus, Search, Loader2, Calendar, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast, Toaster } from "@/components/ui/toaster";
+import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
 import { bem, bemVariant } from "@/lib/bem";
 import {
@@ -71,6 +72,8 @@ type StockTransaction = z.infer<typeof stockTransactionSchema>;
 type Item = z.infer<typeof itemSchema>;
 
 export default function StockAdjustmentPage() {
+  const { user } = useAuth();
+  const canEdit = user?.role === "ADMIN" || user?.role === "WAREHOUSE_STAFF";
   const { showSuccess, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -278,10 +281,12 @@ export default function StockAdjustmentPage() {
             Catatan penyesuaian stok manual (tambah/kurang)
           </p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Buat Penyesuaian
-        </Button>
+        {canEdit && (
+          <Button onClick={() => setIsDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Buat Penyesuaian
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -347,8 +352,8 @@ export default function StockAdjustmentPage() {
             <NoData
               title="Belum ada data penyesuaian stok"
               description="Buat penyesuaian stok pertama Anda."
-              actionLabel="Buat Penyesuaian Pertama"
-              onAction={() => setIsDialogOpen(true)}
+              actionLabel={canEdit ? "Buat Penyesuaian Pertama" : undefined}
+              onAction={canEdit ? () => setIsDialogOpen(true) : undefined}
             />
           ) : (
             <>

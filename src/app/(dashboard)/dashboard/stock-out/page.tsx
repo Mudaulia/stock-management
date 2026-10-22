@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast, Toaster } from "@/components/ui/toaster";
+import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
 import { bem, bemVariant } from "@/lib/bem";
 import { useStockOut, useCreateStockOut, useItems } from "@/hooks/use-api";
@@ -72,6 +73,8 @@ type StockTransaction = z.infer<typeof stockTransactionSchema>;
 type Item = z.infer<typeof itemSchema>;
 
 export default function StockOutPage() {
+  const { user } = useAuth();
+  const canEdit = user?.role === "ADMIN" || user?.role === "WAREHOUSE_STAFF";
   const { showSuccess, showError } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -249,10 +252,12 @@ export default function StockOutPage() {
             Catatan barang yang keluar dari gudang
           </p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Tambah Stok Keluar
-        </Button>
+        {canEdit && (
+          <Button onClick={() => setIsDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Tambah Stok Keluar
+          </Button>
+        )}
       </div>
 
       {/* Search & Filter */}

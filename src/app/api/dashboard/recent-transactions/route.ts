@@ -15,7 +15,7 @@ export async function GET() {
     const transactions = await prisma.stockTransaction.findMany({
       take: 5,
       orderBy: { transactionDate: "desc" },
-      include: { item: { select: { name: true, code: true } } },
+      include: { item: { select: { id: true, name: true, code: true } } },
     });
 
     return NextResponse.json(successResponse(transactions));

@@ -37,6 +37,7 @@ export default function ItemsPage() {
   const { showSuccess, showError } = useToast();
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
+  const canEdit = user?.role === "ADMIN" || user?.role === "WAREHOUSE_STAFF";
   const [search, setSearch] = useState("");
   // Debounce agar tidak fetch API per keystroke (FEF-01)
   const debouncedSearch = useDebounce(search, 300);
@@ -276,10 +277,12 @@ export default function ItemsPage() {
             Kelola master data sparepart
           </p>
         </div>
-        <Button onClick={openCreateDialog}>
-          <Plus className="mr-2 h-4 w-4" />
-          Tambah Barang
-        </Button>
+        {canEdit && (
+          <Button onClick={openCreateDialog}>
+            <Plus className="mr-2 h-4 w-4" />
+            Tambah Barang
+          </Button>
+        )}
       </div>
 
       {/* Search & Filter */}
@@ -327,6 +330,7 @@ export default function ItemsPage() {
               onPageChange={handlePageChange}
               onLimitChange={handleLimitChange}
               isAdmin={isAdmin}
+              canEdit={canEdit}
               isBulkDeletePending={bulkDeleteMutation.isPending}
               isExportPending={exportMutation.isPending}
               onBulkDelete={handleBulkDelete}
