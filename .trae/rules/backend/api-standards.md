@@ -382,6 +382,11 @@ Middleware injects user headers for server components:
 
 **Protected Methods**: POST, PUT, DELETE (all non-safe HTTP methods)
 **Exempt Methods**: GET, HEAD, OPTIONS
+**Exempt Endpoints**:
+- `POST /api/auth/login` — bootstrap autentikasi (token CSRF belum ada sebelum sesi terbentuk)
+- `POST /api/auth/logout` — efek CSRF logout ringan dan logout tanpa sesi adalah no-op
+
+Semua POST/PUT/DELETE lainnya wajib `verifyCSRF`.
 
 **Flow**:
 1. Login sets `csrf-token` cookie + returns token in `x-csrf-token` header

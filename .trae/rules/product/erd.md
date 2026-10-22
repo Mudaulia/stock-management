@@ -244,7 +244,7 @@ User (1) ──────< (N) AuditLog - userId
 
 **Planned Indexes** (ditunda sampai volume data membesar; lihat `docs/audits/2026-10-21-comprehensive-docs-vs-implementation.md`):
 - `stock_transactions.created_by_id` — filter/orderBy transaksi per user (tabel yang tumbuh paling cepat)
-- `users.role` — filter user per role (opsional, tabel kecil)
+- ~~`users.role`~~ — **APPLIED 2026-10-22** (`users_role_idx` via `prisma db push`); `stock_transactions.created_by_id` sudah ter-index otomatis oleh FK `stock_transactions_created_by_id_fkey`, tidak perlu index eksplisit
 
 ## Migration Commands
 

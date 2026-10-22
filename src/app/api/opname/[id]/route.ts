@@ -72,6 +72,12 @@ export async function PUT(
       return NextResponse.json({ message: 'Forbidden: Insufficient permissions' }, { status: 403 })
     }
 
+    // CSRF protection
+    const csrfResult = await verifyCSRF(request)
+    if (!csrfResult.valid) {
+      return csrfResult.response!
+    }
+
     const { id } = await params
     const body = await request.json()
     const validation = updateOpnameSchema.safeParse(body)

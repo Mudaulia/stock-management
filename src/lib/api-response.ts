@@ -120,11 +120,25 @@ export class ApiError extends Error {
 }
 
 /**
+ * Domain errors yang membawa pesan bermakna untuk user.
+ * Hanya nama-nama ini yang dikirim sebagai 400.
+ *
+ * Semua error lain (TypeError, ReferenceError, error Prisma, dsb.)
+ * adalah kegagalan internal → 500 generic, TIDAK boleh bocor ke client.
+ */
+const DOMAIN_ERROR_NAMES = new Set([
+  'StaleOpnameError',
+  'StockConcurrencyError',
+  'StockUnavailableError',
+])
+
+/**
  * Handle any error in a standardized way.
  *
  * - ZodError → 400 with standard errors array
  * - ApiError → uses its own statusCode and code
- * - Other errors → 500 with generic message
+ * - Known domain error → 400 with its message
+ * - Other errors → 500 with generic message (details logged in development)
  */
 export function handleApiError(error: unknown): NextResponse {
   if (error instanceof ZodError) {
@@ -137,7 +151,7 @@ export function handleApiError(error: unknown): NextResponse {
 
   // Error domain kustom (mis. StaleOpnameError, StockConcurrencyError)
   // membawa pesan bermakna untuk user — kirim sebagai 400, bukan 500.
-  if (error instanceof Error && error.name !== 'Error' && error.message) {
+  if (error instanceof Error && DOMAIN_ERROR_NAMES.has(error.name)) {
     return errorResponse(error.message, 400)
   }
 

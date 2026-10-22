@@ -45,6 +45,7 @@ model User {
   opnames           StockOpname[]         @relation("OpnameUser")
   reconciliations   StockReconciliation[] @relation("ReconciliationUser")
 
+  @@index([role])
   @@map("users")
 }
 
