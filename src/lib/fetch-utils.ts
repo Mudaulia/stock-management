@@ -1,4 +1,4 @@
-import { z, ZodError, ZodTypeAny } from 'zod'
+import { z, ZodError, ZodTypeAny } from "zod";
 
 /**
  * Standardized API response shape (server-side).
@@ -11,22 +11,22 @@ import { z, ZodError, ZodTypeAny } from 'zod'
  */
 
 export interface Pagination {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 export interface ApiSuccessResponse<T> {
-  data: T
-  pagination?: Pagination
-  summary?: Record<string, unknown>
+  data: T;
+  pagination?: Pagination;
+  summary?: Record<string, unknown>;
 }
 
 export interface ApiErrorResponse {
-  message: string
-  errors?: unknown[]
-  code?: string
+  message: string;
+  errors?: unknown[];
+  code?: string;
 }
 
 /**
@@ -45,14 +45,17 @@ export const apiSuccessSchema = <T extends ZodTypeAny>(dataSchema: T) =>
       })
       .optional(),
     summary: z.record(z.unknown()).optional(),
-  })
+  });
 
 /**
  * Zod schema for a paginated list response with a custom summary schema.
  */
-export const apiSuccessSchemaWithSummary = <T extends ZodTypeAny, S extends ZodTypeAny>(
+export const apiSuccessSchemaWithSummary = <
+  T extends ZodTypeAny,
+  S extends ZodTypeAny,
+>(
   dataSchema: T,
-  summarySchema: S
+  summarySchema: S,
 ) =>
   z.object({
     data: dataSchema,
@@ -65,7 +68,7 @@ export const apiSuccessSchemaWithSummary = <T extends ZodTypeAny, S extends ZodT
       })
       .optional(),
     summary: summarySchema.optional(),
-  })
+  });
 
 /**
  * Zod schema for the standard API error response envelope.
@@ -74,19 +77,19 @@ export const apiErrorSchema = z.object({
   message: z.string(),
   errors: z.array(z.unknown()).optional(),
   code: z.string().optional(),
-})
+});
 
 /**
  * Zod schema for a paginated list response.
  */
 export const paginatedResponseSchema = <T extends ZodTypeAny>(dataSchema: T) =>
-  apiSuccessSchema(z.array(dataSchema))
+  apiSuccessSchema(z.array(dataSchema));
 
 /**
  * Zod schema for a single-item response.
  */
 export const singleResponseSchema = <T extends ZodTypeAny>(dataSchema: T) =>
-  apiSuccessSchema(dataSchema)
+  apiSuccessSchema(dataSchema);
 
 /**
  * Zod schema for a summary-only response (no data array).
@@ -102,14 +105,25 @@ export const summaryResponseSchema = z.object({
     })
     .optional(),
   summary: z.record(z.unknown()),
-})
+});
 
 /**
  * Result type for fetchWithZod — either success or error.
  */
 export type FetchResult<T> =
-  | { ok: true; data: T; pagination?: Pagination; summary?: Record<string, unknown> }
-  | { ok: false; message: string; errors?: unknown[]; code?: string; status: number }
+  | {
+      ok: true;
+      data: T;
+      pagination?: Pagination;
+      summary?: Record<string, unknown>;
+    }
+  | {
+      ok: false;
+      message: string;
+      errors?: unknown[];
+      code?: string;
+      status: number;
+    };
 
 /**
  * Fetch wrapper that validates the response against a Zod schema.
@@ -139,19 +153,24 @@ export type FetchResult<T> =
 export async function fetchWithZod<T>(
   input: string | URL | Request,
   schema: ZodTypeAny,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<FetchResult<T>> {
   try {
-    const fetchInit = {
+    const fetchInit: RequestInit = {
       ...init,
-      credentials: 'include' as RequestCredentials,
+      credentials: "include" as RequestCredentials,
+    };
+    // Timeout default 30 detik untuk mencegah request menggantung tanpa batas,
+    // kecuali pemanggil menyediakan signal sendiri (mis. pembatalan React Query).
+    if (!fetchInit.signal) {
+      fetchInit.signal = AbortSignal.timeout(30_000);
     }
-    const response = await fetch(input, fetchInit)
-    const body = await response.json()
+    const response = await fetch(input, fetchInit);
+    const body = await response.json();
 
     if (!response.ok) {
       // Try to parse as standardized error response
-      const errorResult = apiErrorSchema.safeParse(body)
+      const errorResult = apiErrorSchema.safeParse(body);
       if (errorResult.success) {
         return {
           ok: false,
@@ -159,63 +178,63 @@ export async function fetchWithZod<T>(
           errors: errorResult.data.errors,
           code: errorResult.data.code,
           status: response.status,
-        }
+        };
       }
 
       // Fallback: body might be a plain error message
-      if (typeof body === 'object' && body !== null && 'message' in body) {
+      if (typeof body === "object" && body !== null && "message" in body) {
         return {
           ok: false,
           message: String((body as { message: unknown }).message),
           status: response.status,
-        }
+        };
       }
 
       return {
         ok: false,
         message: `HTTP ${response.status}: ${response.statusText}`,
         status: response.status,
-      }
+      };
     }
 
     // Validate success response against schema
-    const result = schema.safeParse(body)
+    const result = schema.safeParse(body);
     if (!result.success) {
       // Response shape doesn't match expected schema
       const errorMessages = result.error.errors.map((e) => ({
-        path: e.path.join('.') || '(root)',
+        path: e.path.join(".") || "(root)",
         message: e.message,
         code: e.code,
-      }))
+      }));
 
       return {
         ok: false,
-        message: 'Response shape validation failed',
+        message: "Response shape validation failed",
         errors: errorMessages,
         status: response.status,
-      }
+      };
     }
 
     const validated = result.data as {
-      data: T
-      pagination?: Pagination
-      summary?: Record<string, unknown>
-    }
+      data: T;
+      pagination?: Pagination;
+      summary?: Record<string, unknown>;
+    };
 
     return {
       ok: true,
       data: validated.data,
       pagination: validated.pagination,
       summary: validated.summary,
-    }
+    };
   } catch (err) {
     if (err instanceof ZodError) {
       return {
         ok: false,
-        message: 'Response validation failed',
+        message: "Response validation failed",
         errors: err.errors,
         status: 0,
-      }
+      };
     }
 
     if (err instanceof Error) {
@@ -223,14 +242,14 @@ export async function fetchWithZod<T>(
         ok: false,
         message: err.message,
         status: 0,
-      }
+      };
     }
 
     return {
       ok: false,
-      message: 'Unknown error during fetch',
+      message: "Unknown error during fetch",
       status: 0,
-    }
+    };
   }
 }
 
@@ -248,9 +267,19 @@ export async function fetchWithZod<T>(
 export async function fetchPaginated<T extends ZodTypeAny>(
   url: string,
   dataSchema: T,
-  init?: RequestInit
-): Promise<FetchResult<{ data: z.infer<T>[]; pagination?: Pagination; summary?: Record<string, unknown> }>> {
-  return fetchWithZod<{ data: z.infer<T>[]; pagination?: Pagination; summary?: Record<string, unknown> }>(url, paginatedResponseSchema(dataSchema), init)
+  init?: RequestInit,
+): Promise<
+  FetchResult<{
+    data: z.infer<T>[];
+    pagination?: Pagination;
+    summary?: Record<string, unknown>;
+  }>
+> {
+  return fetchWithZod<{
+    data: z.infer<T>[];
+    pagination?: Pagination;
+    summary?: Record<string, unknown>;
+  }>(url, paginatedResponseSchema(dataSchema), init);
 }
 
 /**
@@ -265,17 +294,30 @@ export async function fetchPaginated<T extends ZodTypeAny>(
  * setSummary(result.summary)
  * ```
  */
-export async function fetchPaginatedWithSummary<T extends ZodTypeAny, S extends ZodTypeAny>(
+export async function fetchPaginatedWithSummary<
+  T extends ZodTypeAny,
+  S extends ZodTypeAny,
+>(
   url: string,
   dataSchema: T,
   summarySchema: S,
-  init?: RequestInit
-): Promise<FetchResult<{ data: z.infer<T>[]; pagination?: Pagination; summary?: z.infer<S> }>> {
-  return fetchWithZod<{ data: z.infer<T>[]; pagination?: Pagination; summary?: z.infer<S> }>(
+  init?: RequestInit,
+): Promise<
+  FetchResult<{
+    data: z.infer<T>[];
+    pagination?: Pagination;
+    summary?: z.infer<S>;
+  }>
+> {
+  return fetchWithZod<{
+    data: z.infer<T>[];
+    pagination?: Pagination;
+    summary?: z.infer<S>;
+  }>(
     url,
     apiSuccessSchemaWithSummary(z.array(dataSchema), summarySchema),
-    init
-  )
+    init,
+  );
 }
 
 /**
@@ -291,9 +333,9 @@ export async function fetchPaginatedWithSummary<T extends ZodTypeAny, S extends 
 export async function fetchSingle<T>(
   url: string,
   dataSchema: ZodTypeAny,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<FetchResult<T>> {
-  return fetchWithZod<T>(url, singleResponseSchema(dataSchema), init)
+  return fetchWithZod<T>(url, singleResponseSchema(dataSchema), init);
 }
 
 /**
@@ -310,9 +352,13 @@ export async function fetchSingle<T>(
 export async function fetchSummary<T>(
   url: string,
   dataSchema: ZodTypeAny,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<FetchResult<T[]>> {
-  return fetchWithZod<T[]>(url, summaryResponseSchema.extend({ data: z.array(dataSchema) }), init)
+  return fetchWithZod<T[]>(
+    url,
+    summaryResponseSchema.extend({ data: z.array(dataSchema) }),
+    init,
+  );
 }
 
 /**
@@ -328,15 +374,15 @@ export async function fetchSummary<T>(
  * ```
  */
 export function formatZodErrors(errors: unknown[]): Record<string, string> {
-  if (!Array.isArray(errors)) return {}
+  if (!Array.isArray(errors)) return {};
 
   return errors.reduce<Record<string, string>>((acc, err) => {
-    if (err && typeof err === 'object' && 'path' in err && 'message' in err) {
-      const path = (err as { path: unknown[] }).path.join('.') || '(root)'
-      acc[path] = String((err as { message: unknown }).message)
+    if (err && typeof err === "object" && "path" in err && "message" in err) {
+      const path = (err as { path: unknown[] }).path.join(".") || "(root)";
+      acc[path] = String((err as { message: unknown }).message);
     }
-    return acc
-  }, {})
+    return acc;
+  }, {});
 }
 
 /**
@@ -344,6 +390,6 @@ export function formatZodErrors(errors: unknown[]): Record<string, string> {
  * Prioritizes the API message, falls back to generic text.
  */
 export function getErrorMessage(result: FetchResult<unknown>): string {
-  if (result.ok) return ''
-  return result.message || 'Terjadi kesalahan yang tidak diketahui'
+  if (result.ok) return "";
+  return result.message || "Terjadi kesalahan yang tidak diketahui";
 }

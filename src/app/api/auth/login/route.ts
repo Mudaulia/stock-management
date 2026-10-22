@@ -1,65 +1,66 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
-import { verifyPassword, setSession } from '@/lib/auth'
-import { handleApiError, successResponse } from '@/lib/api-response'
-import { rateLimit, getRateLimitHeaders } from '@/lib/rate-limiter'
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+import { verifyPassword, setSession } from "@/lib/auth";
+import { handleApiError, successResponse } from "@/lib/api-response";
+import { rateLimit, getRateLimitHeaders } from "@/lib/rate-limiter";
 
 export async function POST(request: NextRequest) {
   // Rate limiting: 5 requests per minute per IP
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-             request.headers.get('x-real-ip') ||
-             'unknown'
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
   const rateLimitResult = await rateLimit(ip, {
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 5,
-    keyPrefix: 'auth:login',
-  })
+    keyPrefix: "auth:login",
+  });
 
   if (!rateLimitResult.success) {
     return NextResponse.json(
-      { message: 'Terlalu banyak percobaan login. Silakan coba lagi nanti.' },
+      { message: "Terlalu banyak percobaan login. Silakan coba lagi nanti." },
       {
         status: 429,
         headers: getRateLimitHeaders(rateLimitResult),
-      }
-    )
+      },
+    );
   }
 
   try {
-    const body = await request.json()
+    const body = await request.json();
     const { email, password } = z
       .object({
-        email: z.string().email('Format email tidak valid'),
-        password: z.string().min(1, 'Password wajib diisi'),
+        email: z.string().email("Format email tidak valid"),
+        password: z.string().min(1, "Password wajib diisi"),
       })
-      .parse(body)
+      .parse(body);
 
     const user = await prisma.user.findUnique({
       where: { email },
-    })
+    });
 
     if (!user || !user.isActive) {
       return NextResponse.json(
-        { message: 'Kredensial tidak valid' },
-        { status: 401 }
-      )
+        { message: "Kredensial tidak valid" },
+        { status: 401 },
+      );
     }
 
-    const isValid = await verifyPassword(password, user.passwordHash)
+    const isValid = await verifyPassword(password, user.passwordHash);
 
     if (!isValid) {
       return NextResponse.json(
-        { message: 'Kredensial tidak valid' },
-        { status: 401 }
-      )
+        { message: "Kredensial tidak valid" },
+        { status: 401 },
+      );
     }
 
     // Update last login
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
-    })
+    });
 
     // Create session and get CSRF token
     const csrfToken = await setSession({
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       role: user.role,
       username: user.username,
-    })
+    });
 
     const response = NextResponse.json(
       successResponse({
@@ -79,14 +80,14 @@ export async function POST(request: NextRequest) {
           role: user.role,
         },
       }),
-      { headers: getRateLimitHeaders(rateLimitResult) }
-    )
+      { headers: getRateLimitHeaders(rateLimitResult) },
+    );
 
     // Add CSRF token to response headers for client-side use
-    response.headers.set('x-csrf-token', csrfToken)
+    response.headers.set("x-csrf-token", csrfToken);
 
-    return response
+    return response;
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }

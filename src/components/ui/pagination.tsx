@@ -1,25 +1,21 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import {
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-} from "lucide-react"
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 
 export interface PaginationProps {
-  currentPage: number
-  totalPages: number
-  pageSize: number
-  totalItems: number
-  onPageChange: (page: number) => void
-  onPageSizeChange?: (size: number) => void
-  pageSizeOptions?: number[]
-  className?: string
-  showPageSizeSelector?: boolean
-  showPageInfo?: boolean
+  currentPage: number;
+  totalPages: number;
+  pageSize: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
+  pageSizeOptions?: number[];
+  className?: string;
+  showPageSizeSelector?: boolean;
+  showPageInfo?: boolean;
 }
 
 export function Pagination({
@@ -34,49 +30,49 @@ export function Pagination({
   showPageSizeSelector = true,
   showPageInfo = true,
 }: PaginationProps) {
-  const startIndex = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0
-  const endIndex = Math.min(currentPage * pageSize, totalItems)
+  const startIndex = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+  const endIndex = Math.min(currentPage * pageSize, totalItems);
 
   // Generate page numbers with ellipsis
   const getPageNumbers = () => {
-    const pages: (number | string)[] = []
-    const maxVisible = 5
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
 
     if (totalPages <= maxVisible) {
       for (let i = 1; i <= totalPages; i++) {
-        pages.push(i)
+        pages.push(i);
       }
     } else {
-      pages.push(1)
+      pages.push(1);
 
       if (currentPage > 3) {
-        pages.push("ellipsis")
+        pages.push("ellipsis");
       }
 
-      const start = Math.max(2, currentPage - 1)
-      const end = Math.min(totalPages - 1, currentPage + 1)
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
 
       for (let i = start; i <= end; i++) {
-        pages.push(i)
+        pages.push(i);
       }
 
       if (currentPage < totalPages - 2) {
-        pages.push("ellipsis")
+        pages.push("ellipsis");
       }
 
-      pages.push(totalPages)
+      pages.push(totalPages);
     }
 
-    return pages
-  }
+    return pages;
+  };
 
-  const pageNumbers = getPageNumbers()
+  const pageNumbers = getPageNumbers();
 
   return (
     <div
       className={cn(
         "flex flex-col sm:flex-row items-center justify-between gap-4",
-        className
+        className,
       )}
     >
       {showPageInfo && (
@@ -88,7 +84,9 @@ export function Pagination({
       <div className="flex items-center space-x-6">
         {showPageSizeSelector && onPageSizeChange && (
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">Baris per halaman:</span>
+            <span className="text-sm text-muted-foreground">
+              Baris per halaman:
+            </span>
             <Select
               value={String(pageSize)}
               onValueChange={(value) => onPageSizeChange(Number(value))}
@@ -138,7 +136,7 @@ export function Pagination({
                 >
                   {page}
                 </Button>
-              )
+              ),
             )}
           </div>
 
@@ -155,7 +153,7 @@ export function Pagination({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // Re-export Select components needed by Pagination
@@ -165,4 +163,4 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";

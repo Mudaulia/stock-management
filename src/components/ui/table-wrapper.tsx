@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 export interface TableWrapperProps {
-  children: React.ReactNode
-  className?: string
-  scrollable?: boolean
+  children: React.ReactNode;
+  className?: string;
+  scrollable?: boolean;
 }
 
 /**
@@ -19,23 +19,12 @@ export function TableWrapper({
   scrollable = true,
 }: TableWrapperProps) {
   if (!scrollable) {
-    return (
-      <div className={cn("rounded-md border", className)}>
-        {children}
-      </div>
-    )
+    return <div className={cn("rounded-md border", className)}>{children}</div>;
   }
 
   return (
-    <div
-      className={cn(
-        "rounded-md border overflow-x-auto",
-        className
-      )}
-    >
-      <div className="min-w-full">
-        {children}
-      </div>
+    <div className={cn("rounded-md border overflow-x-auto", className)}>
+      <div className="min-w-full">{children}</div>
     </div>
-  )
+  );
 }

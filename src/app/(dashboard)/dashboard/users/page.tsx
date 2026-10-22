@@ -81,7 +81,10 @@ const userFormSchema = z.object({
     .string()
     .min(3, "Username minimal 3 karakter")
     .max(50)
-    .regex(/^[a-zA-Z0-9_.-]+$/, "Hanya huruf, angka, titik, garis bawah, strip"),
+    .regex(
+      /^[a-zA-Z0-9_.-]+$/,
+      "Hanya huruf, angka, titik, garis bawah, strip",
+    ),
   fullName: z.string().min(1, "Nama lengkap wajib diisi"),
   role: z.enum(ROLES),
   password: z
@@ -112,7 +115,11 @@ export default function UsersPage() {
     role: Role;
     isActive: boolean;
   } | null>(null);
-  const [toggleConfirm, setToggleConfirm] = useState<{ id: string; name: string; activate: boolean } | null>(null);
+  const [toggleConfirm, setToggleConfirm] = useState<{
+    id: string;
+    name: string;
+    activate: boolean;
+  } | null>(null);
 
   const {
     register,
@@ -123,7 +130,13 @@ export default function UsersPage() {
     watch,
   } = useForm<UserForm>({
     resolver: zodResolver(userFormSchema),
-    defaultValues: { email: "", username: "", fullName: "", role: "VIEWER", password: "" },
+    defaultValues: {
+      email: "",
+      username: "",
+      fullName: "",
+      role: "VIEWER",
+      password: "",
+    },
   });
 
   const watchedRole = watch("role");
@@ -162,7 +175,13 @@ export default function UsersPage() {
 
   function openCreateDialog() {
     setEditingUser(null);
-    reset({ email: "", username: "", fullName: "", role: "VIEWER", password: "" });
+    reset({
+      email: "",
+      username: "",
+      fullName: "",
+      role: "VIEWER",
+      password: "",
+    });
     setIsDialogOpen(true);
   }
 
@@ -211,7 +230,7 @@ export default function UsersPage() {
       showSuccess(
         toggleConfirm?.activate
           ? "Pengguna berhasil diaktifkan"
-          : "Pengguna berhasil dinonaktifkan"
+          : "Pengguna berhasil dinonaktifkan",
       );
       setToggleConfirm(null);
     },
@@ -230,7 +249,9 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Manajemen Pengguna</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Manajemen Pengguna
+          </h1>
           <p className="text-muted-foreground">
             Kelola akun pengguna dan hak akses (khusus Admin)
           </p>
@@ -291,13 +312,20 @@ export default function UsersPage() {
           ) : isError ? (
             <EmptyState
               title="Gagal memuat data"
-              description={error?.message ?? "Terjadi kesalahan saat memuat pengguna. Silakan coba lagi."}
+              description={
+                error?.message ??
+                "Terjadi kesalahan saat memuat pengguna. Silakan coba lagi."
+              }
               actionLabel="Coba Lagi"
               onAction={() => refetch()}
             />
           ) : users.length === 0 ? (
             <NoData
-              title={debouncedSearch || roleFilter !== "all" ? "Tidak ada hasil" : "Belum ada pengguna"}
+              title={
+                debouncedSearch || roleFilter !== "all"
+                  ? "Tidak ada hasil"
+                  : "Belum ada pengguna"
+              }
               description={
                 debouncedSearch || roleFilter !== "all"
                   ? "Coba ubah kata kunci atau filter."
@@ -323,9 +351,13 @@ export default function UsersPage() {
                   <TableBody>
                     {users.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.fullName}</TableCell>
+                        <TableCell className="font-medium">
+                          {user.fullName}
+                        </TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell className="text-muted-foreground">@{user.username}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          @{user.username}
+                        </TableCell>
                         <TableCell>
                           <Badge
                             variant={
@@ -341,17 +373,25 @@ export default function UsersPage() {
                         </TableCell>
                         <TableCell>
                           {user.isActive ? (
-                            <Badge variant="outline" className="text-green-600 border-green-300">
+                            <Badge
+                              variant="outline"
+                              className="text-green-600 border-green-300"
+                            >
                               <UserCheck className="mr-1 h-3 w-3" /> Aktif
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-destructive border-destructive/40">
+                            <Badge
+                              variant="outline"
+                              className="text-destructive border-destructive/40"
+                            >
                               <UserX className="mr-1 h-3 w-3" /> Nonaktif
                             </Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {user.lastLoginAt ? formatDate(user.lastLoginAt) : "Belum pernah"}
+                          {user.lastLoginAt
+                            ? formatDate(user.lastLoginAt)
+                            : "Belum pernah"}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -361,7 +401,9 @@ export default function UsersPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEditDialog(user)}>
+                              <DropdownMenuItem
+                                onClick={() => openEditDialog(user)}
+                              >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
@@ -407,7 +449,12 @@ export default function UsersPage() {
                     variant="outline"
                     size="sm"
                     disabled={pagination.page <= 1}
-                    onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
+                    onClick={() =>
+                      setPagination((prev) => ({
+                        ...prev,
+                        page: prev.page - 1,
+                      }))
+                    }
                   >
                     Sebelumnya
                   </Button>
@@ -417,8 +464,15 @@ export default function UsersPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={pagination.page >= (paginationInfo?.totalPages ?? 1)}
-                    onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
+                    disabled={
+                      pagination.page >= (paginationInfo?.totalPages ?? 1)
+                    }
+                    onClick={() =>
+                      setPagination((prev) => ({
+                        ...prev,
+                        page: prev.page + 1,
+                      }))
+                    }
                   >
                     Berikutnya
                   </Button>
@@ -430,10 +484,15 @@ export default function UsersPage() {
       </Card>
 
       {/* Create / Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={(open) => !open && closeDialog()}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => !open && closeDialog()}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingUser ? "Edit Pengguna" : "Tambah Pengguna"}</DialogTitle>
+            <DialogTitle>
+              {editingUser ? "Edit Pengguna" : "Tambah Pengguna"}
+            </DialogTitle>
             <DialogDescription>
               {editingUser
                 ? "Perbarui data pengguna. Biarkan password kosong jika tidak diubah."
@@ -443,28 +502,50 @@ export default function UsersPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">Nama Lengkap *</Label>
-              <Input id="fullName" placeholder="Budi Santoso" {...register("fullName")} />
+              <Input
+                id="fullName"
+                placeholder="Budi Santoso"
+                {...register("fullName")}
+              />
               {errors.fullName && (
-                <p className="text-sm text-destructive">{errors.fullName.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.fullName.message}
+                </p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
-              <Input id="email" type="email" placeholder="budi@perusahaan.com" {...register("email")} />
+              <Input
+                id="email"
+                type="email"
+                placeholder="budi@perusahaan.com"
+                {...register("email")}
+              />
               {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.email.message}
+                </p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="username">Username *</Label>
-              <Input id="username" placeholder="budi.santoso" {...register("username")} />
+              <Input
+                id="username"
+                placeholder="budi.santoso"
+                {...register("username")}
+              />
               {errors.username && (
-                <p className="text-sm text-destructive">{errors.username.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.username.message}
+                </p>
               )}
             </div>
             <div className="space-y-2">
               <Label>Role *</Label>
-              <Select value={watchedRole} onValueChange={(v) => setValue("role", v as Role)}>
+              <Select
+                value={watchedRole}
+                onValueChange={(v) => setValue("role", v as Role)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih role" />
                 </SelectTrigger>
@@ -479,16 +560,21 @@ export default function UsersPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">
-                Password {!editingUser && "*"} {editingUser && "(kosongkan jika tidak diubah)"}
+                Password {!editingUser && "*"}{" "}
+                {editingUser && "(kosongkan jika tidak diubah)"}
               </Label>
               <Input
                 id="password"
                 type="password"
-                placeholder={editingUser ? "••••••••" : "Min. 8 karakter, huruf & angka"}
+                placeholder={
+                  editingUser ? "••••••••" : "Min. 8 karakter, huruf & angka"
+                }
                 {...register("password")}
               />
               {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.password.message}
+                </p>
               )}
             </div>
             <DialogFooter>
@@ -496,7 +582,9 @@ export default function UsersPage() {
                 Batal
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {editingUser ? "Simpan" : "Tambah"}
               </Button>
             </DialogFooter>
@@ -512,7 +600,9 @@ export default function UsersPage() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>
-              {toggleConfirm?.activate ? "Aktifkan pengguna?" : "Nonaktifkan pengguna?"}
+              {toggleConfirm?.activate
+                ? "Aktifkan pengguna?"
+                : "Nonaktifkan pengguna?"}
             </DialogTitle>
             <DialogDescription>
               {toggleConfirm?.activate
@@ -536,7 +626,9 @@ export default function UsersPage() {
                 }
               }}
             >
-              {toggleMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {toggleMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {toggleConfirm?.activate ? "Aktifkan" : "Nonaktifkan"}
             </Button>
           </DialogFooter>

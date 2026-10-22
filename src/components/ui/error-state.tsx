@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { AlertCircle, RefreshCw } from "lucide-react"
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
 export interface ErrorStateProps {
-  title?: string
-  description?: string
-  onRetry?: () => void
-  retryLabel?: string
-  className?: string
+  title?: string;
+  description?: string;
+  onRetry?: () => void;
+  retryLabel?: string;
+  className?: string;
 }
 
 export function ErrorState({
@@ -24,7 +24,7 @@ export function ErrorState({
     <div
       className={cn(
         "flex flex-col items-center justify-center text-center py-12 px-4",
-        className
+        className,
       )}
     >
       <div className="mb-4 rounded-full bg-red-100 p-3">
@@ -41,5 +41,5 @@ export function ErrorState({
         </Button>
       )}
     </div>
-  )
+  );
 }

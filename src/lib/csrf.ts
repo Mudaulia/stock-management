@@ -1,117 +1,126 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { SignJWT, jwtVerify } from 'jose'
-import { getSession } from './auth'
+import { NextRequest, NextResponse } from "next/server";
+import { SignJWT, jwtVerify } from "jose";
+import { getSession } from "./auth";
 
-const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET
-const CSRF_COOKIE_NAME = 'csrf-token'
-const CSRF_HEADER_NAME = 'x-csrf-token'
+const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET;
+const CSRF_COOKIE_NAME = "csrf-token";
+const CSRF_HEADER_NAME = "x-csrf-token";
 
 if (!CSRF_SECRET || CSRF_SECRET.length < 32) {
-  throw new Error('CSRF_SECRET (or JWT_SECRET) must be at least 32 characters long')
+  throw new Error(
+    "CSRF_SECRET (or JWT_SECRET) must be at least 32 characters long",
+  );
 }
 
-const secretKey = new TextEncoder().encode(CSRF_SECRET)
+const secretKey = new TextEncoder().encode(CSRF_SECRET);
 
 export interface CSRFTokenPayload {
-  userId: string
-  timestamp: number
+  userId: string;
+  timestamp: number;
 }
 
 export async function generateCSRFToken(userId: string): Promise<string> {
   return new SignJWT({ userId, timestamp: Date.now() })
-    .setProtectedHeader({ alg: 'HS256' })
+    .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime('1h')
-    .sign(secretKey)
+    .setExpirationTime("1h")
+    .sign(secretKey);
 }
 
-export async function verifyCSRFToken(token: string): Promise<CSRFTokenPayload | null> {
+export async function verifyCSRFToken(
+  token: string,
+): Promise<CSRFTokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secretKey)
+    const { payload } = await jwtVerify(token, secretKey);
     return {
       userId: payload.userId as string,
       timestamp: payload.timestamp as number,
-    }
+    };
   } catch {
-    return null
+    return null;
   }
 }
 
 export function getCSRFTokenFromRequest(request: NextRequest): string | null {
   // Check header first (for API calls)
-  const headerToken = request.headers.get(CSRF_HEADER_NAME)
-  if (headerToken) return headerToken
+  const headerToken = request.headers.get(CSRF_HEADER_NAME);
+  if (headerToken) return headerToken;
 
   // Check cookie (for form submissions)
-  const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value
-  if (cookieToken) return cookieToken
+  const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
+  if (cookieToken) return cookieToken;
 
-  return null
+  return null;
 }
 
-export function setCSRFTokenCookie(response: NextResponse, token: string): void {
+export function setCSRFTokenCookie(
+  response: NextResponse,
+  token: string,
+): void {
   response.cookies.set(CSRF_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
     maxAge: 60 * 60, // 1 hour
-    path: '/',
-  })
+    path: "/",
+  });
 }
 
 export function clearCSRFTokenCookie(response: NextResponse): void {
-  response.cookies.set(CSRF_COOKIE_NAME, '', {
+  response.cookies.set(CSRF_COOKIE_NAME, "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
     maxAge: 0,
-    path: '/',
-  })
+    path: "/",
+  });
 }
 
-export async function verifyCSRF(request: NextRequest): Promise<{ valid: boolean; response?: NextResponse; userId?: string }> {
+export async function verifyCSRF(
+  request: NextRequest,
+): Promise<{ valid: boolean; response?: NextResponse; userId?: string }> {
   // Skip CSRF for GET, HEAD, OPTIONS
-  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
-    return { valid: true }
+  if (["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+    return { valid: true };
   }
 
-  const session = await getSession()
+  const session = await getSession();
   if (!session) {
     return {
       valid: false,
-      response: NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      ),
-    }
+      response: NextResponse.json({ message: "Unauthorized" }, { status: 401 }),
+    };
   }
 
-  const token = getCSRFTokenFromRequest(request)
+  const token = getCSRFTokenFromRequest(request);
   if (!token) {
     return {
       valid: false,
       response: NextResponse.json(
-        { message: 'CSRF token missing' },
-        { status: 403 }
+        { message: "CSRF token missing" },
+        { status: 403 },
       ),
-    }
+    };
   }
 
-  const payload = await verifyCSRFToken(token)
+  const payload = await verifyCSRFToken(token);
   if (!payload || payload.userId !== session.userId) {
     return {
       valid: false,
       response: NextResponse.json(
-        { message: 'Invalid CSRF token' },
-        { status: 403 }
+        { message: "Invalid CSRF token" },
+        { status: 403 },
       ),
-    }
+    };
   }
 
-  return { valid: true, userId: session.userId }
+  return { valid: true, userId: session.userId };
 }
 
-export function addCSRFHeaders(response: NextResponse, token: string): NextResponse {
-  response.headers.set(CSRF_HEADER_NAME, token)
-  return response
+export function addCSRFHeaders(
+  response: NextResponse,
+  token: string,
+): NextResponse {
+  response.headers.set(CSRF_HEADER_NAME, token);
+  return response;
 }

@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Filter, X } from "lucide-react"
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Filter, X } from "lucide-react";
 
 export interface FilterOption {
-  key: string
-  label: string
-  value: string
-  options: { value: string; label: string }[]
+  key: string;
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
 }
 
 export interface FilterCardProps {
-  title?: string
-  filters: FilterOption[]
-  values: Record<string, string>
-  onChange: (key: string, value: string) => void
-  onClear?: () => void
-  onApply?: () => void
-  showApplyButton?: boolean
-  showClearButton?: boolean
-  className?: string
+  title?: string;
+  filters: FilterOption[];
+  values: Record<string, string>;
+  onChange: (key: string, value: string) => void;
+  onClear?: () => void;
+  onApply?: () => void;
+  showApplyButton?: boolean;
+  showClearButton?: boolean;
+  className?: string;
 }
 
 export function FilterCard({
@@ -36,7 +36,7 @@ export function FilterCard({
   showClearButton = true,
   className,
 }: FilterCardProps) {
-  const hasActiveFilters = Object.values(values).some((v) => v !== "")
+  const hasActiveFilters = Object.values(values).some((v) => v !== "");
 
   return (
     <Card className={cn("mb-4", className)}>
@@ -89,5 +89,5 @@ export function FilterCard({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

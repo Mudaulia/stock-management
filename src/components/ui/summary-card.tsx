@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   TrendingUp,
   TrendingDown,
@@ -10,16 +10,16 @@ import {
   AlertTriangle,
   DollarSign,
   Users,
-} from "lucide-react"
+} from "lucide-react";
 
 export interface SummaryCardProps {
-  title: string
-  value: string | number
-  change?: string
-  trend?: "up" | "down" | "neutral"
-  icon?: React.ReactNode
-  className?: string
-  valueClassName?: string
+  title: string;
+  value: string | number;
+  change?: string;
+  trend?: "up" | "down" | "neutral";
+  icon?: React.ReactNode;
+  className?: string;
+  valueClassName?: string;
 }
 
 const iconMap = {
@@ -29,7 +29,7 @@ const iconMap = {
   alert: AlertTriangle,
   dollar: DollarSign,
   users: Users,
-}
+};
 
 export function SummaryCard({
   title,
@@ -40,13 +40,14 @@ export function SummaryCard({
   className,
   valueClassName,
 }: SummaryCardProps) {
-  const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : null
+  const TrendIcon =
+    trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : null;
   const trendColor =
     trend === "up"
       ? "text-green-600"
       : trend === "down"
-      ? "text-red-600"
-      : "text-muted-foreground"
+        ? "text-red-600"
+        : "text-muted-foreground";
 
   return (
     <Card className={cn("w-full", className)}>
@@ -55,9 +56,7 @@ export function SummaryCard({
         {icon}
       </CardHeader>
       <CardContent>
-        <div className={cn("text-2xl font-bold", valueClassName)}>
-          {value}
-        </div>
+        <div className={cn("text-2xl font-bold", valueClassName)}>{value}</div>
         {change && (
           <p className="text-xs text-muted-foreground">
             <span className={cn("inline-flex items-center", trendColor)}>
@@ -68,7 +67,7 @@ export function SummaryCard({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // Predefined summary cards for common use cases
@@ -88,7 +87,7 @@ export function StockSummaryCard({
       icon={<Package className="h-4 w-4 text-muted-foreground" />}
       className={className}
     />
-  )
+  );
 }
 
 export function LowStockSummaryCard({
@@ -96,13 +95,13 @@ export function LowStockSummaryCard({
   totalItems,
   className,
 }: {
-  count: number
-  totalItems: number
-  className?: string
+  count: number;
+  totalItems: number;
+  className?: string;
 }) {
-  const percentage = totalItems > 0 ? Math.round((count / totalItems) * 100) : 0
-  const trend: "up" | "down" | "neutral" =
-    count > 0 ? "down" : "neutral"
+  const percentage =
+    totalItems > 0 ? Math.round((count / totalItems) * 100) : 0;
+  const trend: "up" | "down" | "neutral" = count > 0 ? "down" : "neutral";
 
   return (
     <SummaryCard
@@ -113,7 +112,7 @@ export function LowStockSummaryCard({
       icon={<AlertTriangle className="h-4 w-4 text-orange-500" />}
       className={className}
     />
-  )
+  );
 }
 
 export function ValueSummaryCard({
@@ -132,5 +131,5 @@ export function ValueSummaryCard({
       icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
       className={className}
     />
-  )
+  );
 }

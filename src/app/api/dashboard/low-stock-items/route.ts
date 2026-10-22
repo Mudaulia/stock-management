@@ -1,18 +1,15 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
-import { handleApiError, successResponse } from '@/lib/api-response'
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
+import { handleApiError, successResponse } from "@/lib/api-response";
 
 export async function GET() {
   try {
     // Auth server-side: role berasal dari DB, bukan token/client.
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
 
     if (!user) {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const items = await prisma.item.findMany({
@@ -20,13 +17,20 @@ export async function GET() {
         isActive: true,
         currentStock: { lte: prisma.item.fields.minStock },
       },
-      orderBy: { currentStock: 'asc' },
+      orderBy: { currentStock: "asc" },
       take: 5,
-      select: { id: true, code: true, name: true, currentStock: true, minStock: true, unit: true },
-    })
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        currentStock: true,
+        minStock: true,
+        unit: true,
+      },
+    });
 
-    return NextResponse.json(successResponse(items))
+    return NextResponse.json(successResponse(items));
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }

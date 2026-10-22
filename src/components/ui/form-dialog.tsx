@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -10,30 +10,25 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 export interface FormDialogProps {
-  trigger?: React.ReactNode
-  triggerLabel?: string
+  trigger?: React.ReactNode;
+  triggerLabel?: string;
   triggerVariant?:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link"
-  title: string
-  description?: string
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void
-  isSubmitting?: boolean
-  submitLabel?: string
-  cancelLabel?: string
-  className?: string
-  children?: React.ReactNode
+    "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  title: string;
+  description?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
+  isSubmitting?: boolean;
+  submitLabel?: string;
+  cancelLabel?: string;
+  className?: string;
+  children?: React.ReactNode;
 }
 
 export function FormDialog({
@@ -51,21 +46,17 @@ export function FormDialog({
   className,
   children,
 }: FormDialogProps) {
-  const [internalOpen, setInternalOpen] = React.useState(false)
-  const isOpen = open ?? internalOpen
-  const setIsOpen = onOpenChange ?? setInternalOpen
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const isOpen = open ?? internalOpen;
+  const setIsOpen = onOpenChange ?? setInternalOpen;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {trigger !== undefined ? (
-        <DialogTrigger asChild>
-          {trigger}
-        </DialogTrigger>
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
       ) : (
         <DialogTrigger asChild>
-          <Button variant={triggerVariant}>
-            {triggerLabel}
-          </Button>
+          <Button variant={triggerVariant}>{triggerLabel}</Button>
         </DialogTrigger>
       )}
       <DialogContent className={cn("sm:max-w-[500px]", className)}>
@@ -96,5 +87,5 @@ export function FormDialog({
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

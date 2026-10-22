@@ -7,14 +7,14 @@
  * .trae/rules/product/erd.md (Item.unit).
  */
 export const UNIT_OPTIONS = [
-  'PCS',
-  'SET',
-  'LITER',
-  'UNIT',
-  'METER',
-  'KG',
-  'BOX',
-  'PACK',
-] as const
+  "PCS",
+  "SET",
+  "LITER",
+  "UNIT",
+  "METER",
+  "KG",
+  "BOX",
+  "PACK",
+] as const;
 
-export type UnitOption = (typeof UNIT_OPTIONS)[number]
+export type UnitOption = (typeof UNIT_OPTIONS)[number];

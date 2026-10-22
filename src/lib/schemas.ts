@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from "zod";
 
 /**
  * Zod schemas for all data types used across the frontend.
@@ -15,12 +15,12 @@ export const userSchema = z.object({
   email: z.string().email(),
   username: z.string(),
   fullName: z.string(),
-  role: z.enum(['ADMIN', 'WAREHOUSE_STAFF', 'VIEWER']),
-})
+  role: z.enum(["ADMIN", "WAREHOUSE_STAFF", "VIEWER"]),
+});
 
 export const loginResponseSchema = z.object({
   user: userSchema,
-})
+});
 
 // ─── Items ───────────────────────────────────────────────────────────────
 
@@ -35,22 +35,26 @@ export const itemSchema = z.object({
   isActive: z.boolean(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-})
+});
 
 export const itemWithStockStatusSchema = itemSchema.extend({
-  stockStatus: z.enum(['NORMAL', 'LOW_STOCK', 'OUT_OF_STOCK']),
+  stockStatus: z.enum(["NORMAL", "LOW_STOCK", "OUT_OF_STOCK"]),
   stockPercentage: z.number(),
-})
+});
 
 export const itemWithShortageSchema = itemSchema.extend({
-  stockStatus: z.enum(['LOW_STOCK', 'OUT_OF_STOCK']),
+  stockStatus: z.enum(["LOW_STOCK", "OUT_OF_STOCK"]),
   shortage: z.number(),
   stockPercentage: z.number(),
-})
+});
 
 // ─── Stock Transactions ──────────────────────────────────────────────────
 
-export const transactionTypeSchema = z.enum(['STOCK_IN', 'STOCK_OUT', 'ADJUSTMENT'])
+export const transactionTypeSchema = z.enum([
+  "STOCK_IN",
+  "STOCK_OUT",
+  "ADJUSTMENT",
+]);
 
 export const transactionItemSchema = z.object({
   id: z.string(),
@@ -58,13 +62,13 @@ export const transactionItemSchema = z.object({
   name: z.string(),
   unit: z.string(),
   currentStock: z.number().int().optional(),
-})
+});
 
 export const transactionUserSchema = z.object({
   id: z.string(),
   username: z.string(),
   fullName: z.string(),
-})
+});
 
 export const stockTransactionSchema = z.object({
   id: z.string(),
@@ -77,17 +81,22 @@ export const stockTransactionSchema = z.object({
   createdAt: z.string().datetime(),
   item: transactionItemSchema,
   createdBy: transactionUserSchema,
-})
+});
 
-export const stockTransactionWithItemStockSchema = stockTransactionSchema.extend({
-  item: transactionItemSchema.extend({
-    currentStock: z.number().int(),
-  }),
-})
+export const stockTransactionWithItemStockSchema =
+  stockTransactionSchema.extend({
+    item: transactionItemSchema.extend({
+      currentStock: z.number().int(),
+    }),
+  });
 
 // ─── Stock Opname ────────────────────────────────────────────────────────
 
-export const opnameStatusSchema = z.enum(['PENDING', 'RECONCILED', 'CANCELLED'])
+export const opnameStatusSchema = z.enum([
+  "PENDING",
+  "RECONCILED",
+  "CANCELLED",
+]);
 
 export const opnameItemSchema = z.object({
   id: z.string(),
@@ -95,7 +104,7 @@ export const opnameItemSchema = z.object({
   name: z.string(),
   unit: z.string(),
   currentStock: z.number().int(),
-})
+});
 
 export const reconciliationSchema = z.object({
   id: z.string(),
@@ -103,7 +112,7 @@ export const reconciliationSchema = z.object({
   adjustedBy: z.object({
     fullName: z.string(),
   }),
-})
+});
 
 export const stockOpnameSchema = z.object({
   id: z.string(),
@@ -118,7 +127,7 @@ export const stockOpnameSchema = z.object({
   item: opnameItemSchema,
   createdBy: transactionUserSchema,
   reconciliation: reconciliationSchema.nullable().optional(),
-})
+});
 
 // ─── Summary Schemas ─────────────────────────────────────────────────────
 
@@ -127,20 +136,20 @@ export const stockReportSummarySchema = z.object({
   lowStockCount: z.number().int(),
   outOfStockCount: z.number().int(),
   normalCount: z.number().int(),
-})
+});
 
 export const lowStockReportSummarySchema = z.object({
   totalLowStock: z.number().int(),
   totalOutOfStock: z.number().int(),
   totalItems: z.number().int(),
-})
+});
 
 export const mutationSummarySchema = z.record(
   z.object({
     totalQuantity: z.number().int(),
     transactionCount: z.number().int(),
-  })
-)
+  }),
+);
 
 // ─── Report Item Schemas ─────────────────────────────────────────────────
 
@@ -152,9 +161,9 @@ export const stockReportItemSchema = z.object({
   currentStock: z.number().int(),
   minStock: z.number().int(),
   stockPercentage: z.number(),
-  stockStatus: z.enum(['NORMAL', 'LOW_STOCK', 'OUT_OF_STOCK']),
+  stockStatus: z.enum(["NORMAL", "LOW_STOCK", "OUT_OF_STOCK"]),
   isActive: z.boolean(),
-})
+});
 
 export const lowStockReportItemSchema = z.object({
   id: z.string(),
@@ -165,8 +174,8 @@ export const lowStockReportItemSchema = z.object({
   minStock: z.number().int(),
   shortage: z.number().int(),
   stockPercentage: z.number(),
-  stockStatus: z.enum(['LOW_STOCK', 'OUT_OF_STOCK']),
-})
+  stockStatus: z.enum(["LOW_STOCK", "OUT_OF_STOCK"]),
+});
 
 export const mutationReportItemSchema = z.object({
   id: z.string(),
@@ -178,4 +187,4 @@ export const mutationReportItemSchema = z.object({
   transactionDate: z.string().datetime(),
   item: transactionItemSchema,
   createdBy: transactionUserSchema,
-})
+});

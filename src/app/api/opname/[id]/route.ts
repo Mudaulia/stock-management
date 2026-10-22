@@ -1,38 +1,48 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { z } from 'zod'
-import { handleApiError, successResponse } from '@/lib/api-response'
-import { verifyCSRF } from '@/lib/csrf'
+import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+import { handleApiError, successResponse } from "@/lib/api-response";
+import { verifyCSRF } from "@/lib/csrf";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 const updateOpnameSchema = z.object({
-  physicalStock: z.coerce.number().int().nonnegative('Stok fisik tidak boleh negatif').optional(),
+  physicalStock: z.coerce
+    .number()
+    .int()
+    .nonnegative("Stok fisik tidak boleh negatif")
+    .optional(),
   notes: z.string().optional(),
-})
+});
 
 const reconcileSchema = z.object({
   notes: z.string().optional(),
-})
+});
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params
+    const { id } = await params;
 
     const opname = await prisma.stockOpname.findUnique({
       where: { id },
       include: {
         item: {
-          select: { id: true, code: true, name: true, unit: true, currentStock: true },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            unit: true,
+            currentStock: true,
+          },
         },
         createdBy: {
           select: { id: true, username: true, fullName: true },
@@ -45,69 +55,78 @@ export async function GET(
           },
         },
       },
-    })
+    });
 
     if (!opname) {
-      return NextResponse.json({ message: 'Opname tidak ditemukan' }, { status: 404 })
+      return NextResponse.json(
+        { message: "Opname tidak ditemukan" },
+        { status: 404 },
+      );
     }
 
-    return NextResponse.json(successResponse(opname))
+    return NextResponse.json(successResponse(opname));
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     // Role check: Only ADMIN and WAREHOUSE_STAFF can update opname
-    if (user.role !== 'ADMIN' && user.role !== 'WAREHOUSE_STAFF') {
-      return NextResponse.json({ message: 'Forbidden: Insufficient permissions' }, { status: 403 })
+    if (user.role !== "ADMIN" && user.role !== "WAREHOUSE_STAFF") {
+      return NextResponse.json(
+        { message: "Forbidden: Insufficient permissions" },
+        { status: 403 },
+      );
     }
 
     // CSRF protection
-    const csrfResult = await verifyCSRF(request)
+    const csrfResult = await verifyCSRF(request);
     if (!csrfResult.valid) {
-      return csrfResult.response!
+      return csrfResult.response!;
     }
 
-    const { id } = await params
-    const body = await request.json()
-    const validation = updateOpnameSchema.safeParse(body)
+    const { id } = await params;
+    const body = await request.json();
+    const validation = updateOpnameSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json(
-        { message: 'Validasi gagal', errors: validation.error.errors },
-        { status: 400 }
-      )
+        { message: "Validasi gagal", errors: validation.error.errors },
+        { status: 400 },
+      );
     }
 
     const opname = await prisma.stockOpname.findUnique({
       where: { id },
-    })
+    });
 
     if (!opname) {
-      return NextResponse.json({ message: 'Opname tidak ditemukan' }, { status: 404 })
-    }
-
-    if (opname.status !== 'PENDING') {
       return NextResponse.json(
-        { message: 'Hanya opname dengan status PENDING yang dapat diubah' },
-        { status: 400 }
-      )
+        { message: "Opname tidak ditemukan" },
+        { status: 404 },
+      );
     }
 
-    const { physicalStock, notes } = validation.data
-    const systemStock = opname.systemStock
-    const newPhysicalStock = physicalStock ?? opname.physicalStock
-    const difference = newPhysicalStock - systemStock
+    if (opname.status !== "PENDING") {
+      return NextResponse.json(
+        { message: "Hanya opname dengan status PENDING yang dapat diubah" },
+        { status: 400 },
+      );
+    }
+
+    const { physicalStock, notes } = validation.data;
+    const systemStock = opname.systemStock;
+    const newPhysicalStock = physicalStock ?? opname.physicalStock;
+    const difference = newPhysicalStock - systemStock;
 
     const updatedOpname = await prisma.$transaction(async (tx) => {
       const updated = await tx.stockOpname.update({
@@ -119,20 +138,26 @@ export async function PUT(
         },
         include: {
           item: {
-            select: { id: true, code: true, name: true, unit: true, currentStock: true },
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              unit: true,
+              currentStock: true,
+            },
           },
           createdBy: {
             select: { id: true, username: true, fullName: true },
           },
         },
-      })
+      });
 
       // Audit log
       await tx.auditLog.create({
         data: {
           userId: user.id,
-          action: 'UPDATE',
-          entity: 'StockOpname',
+          action: "UPDATE",
+          entity: "StockOpname",
           entityId: id,
           oldData: {
             physicalStock: opname.physicalStock,
@@ -145,86 +170,98 @@ export async function PUT(
             notes: notes ?? opname.notes,
           },
         },
-      })
+      });
 
-      return updated
-    })
+      return updated;
+    });
 
-    return NextResponse.json(successResponse(updatedOpname))
+    return NextResponse.json(successResponse(updatedOpname));
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     // Role check: Only ADMIN and WAREHOUSE_STAFF can cancel opname
-    if (user.role !== 'ADMIN' && user.role !== 'WAREHOUSE_STAFF') {
-      return NextResponse.json({ message: 'Forbidden: Insufficient permissions' }, { status: 403 })
+    if (user.role !== "ADMIN" && user.role !== "WAREHOUSE_STAFF") {
+      return NextResponse.json(
+        { message: "Forbidden: Insufficient permissions" },
+        { status: 403 },
+      );
     }
 
     // CSRF protection
-    const csrfResult = await verifyCSRF(request)
+    const csrfResult = await verifyCSRF(request);
     if (!csrfResult.valid) {
-      return csrfResult.response!
+      return csrfResult.response!;
     }
 
-    const { id } = await params
+    const { id } = await params;
 
     const opname = await prisma.stockOpname.findUnique({
       where: { id },
-    })
+    });
 
     if (!opname) {
-      return NextResponse.json({ message: 'Opname tidak ditemukan' }, { status: 404 })
+      return NextResponse.json(
+        { message: "Opname tidak ditemukan" },
+        { status: 404 },
+      );
     }
 
-    if (opname.status !== 'PENDING') {
+    if (opname.status !== "PENDING") {
       return NextResponse.json(
-        { message: 'Hanya opname dengan status PENDING yang dapat dibatalkan' },
-        { status: 400 }
-      )
+        { message: "Hanya opname dengan status PENDING yang dapat dibatalkan" },
+        { status: 400 },
+      );
     }
 
     const updatedOpname = await prisma.$transaction(async (tx) => {
       const updated = await tx.stockOpname.update({
         where: { id },
-        data: { status: 'CANCELLED' },
+        data: { status: "CANCELLED" },
         include: {
           item: {
-            select: { id: true, code: true, name: true, unit: true, currentStock: true },
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              unit: true,
+              currentStock: true,
+            },
           },
           createdBy: {
             select: { id: true, username: true, fullName: true },
           },
         },
-      })
+      });
 
       // Audit log
       await tx.auditLog.create({
         data: {
           userId: user.id,
-          action: 'CANCEL',
-          entity: 'StockOpname',
+          action: "CANCEL",
+          entity: "StockOpname",
           entityId: id,
           oldData: { status: opname.status },
-          newData: { status: 'CANCELLED' },
+          newData: { status: "CANCELLED" },
         },
-      })
+      });
 
-      return updated
-    })
+      return updated;
+    });
 
-    return NextResponse.json(successResponse(updatedOpname))
+    return NextResponse.json(successResponse(updatedOpname));
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }

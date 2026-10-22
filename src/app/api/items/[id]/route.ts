@@ -1,21 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
-import { z } from 'zod'
-import { handleApiError, successResponse } from '@/lib/api-response'
-import { verifyCSRF } from '@/lib/csrf'
-import { UNIT_OPTIONS } from '@/lib/constants'
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
+import { z } from "zod";
+import { handleApiError, successResponse } from "@/lib/api-response";
+import { verifyCSRF } from "@/lib/csrf";
+import { UNIT_OPTIONS } from "@/lib/constants";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 const unitSchema = z
   .string()
   .transform((val) => val.trim().toUpperCase())
   .pipe(
     z.enum(UNIT_OPTIONS, {
-      message: `Satuan harus salah satu dari: ${UNIT_OPTIONS.join(', ')}`,
-    })
-  )
+      message: `Satuan harus salah satu dari: ${UNIT_OPTIONS.join(", ")}`,
+    }),
+  );
 
 const itemUpdateSchema = z.object({
   code: z.string().min(1).max(50).optional(),
@@ -24,27 +24,24 @@ const itemUpdateSchema = z.object({
   minStock: z.number().int().min(0).optional(),
   description: z.string().optional(),
   isActive: z.boolean().optional(),
-})
+});
 
 export async function GET(
   request: NextRequest,
   {
     params,
   }: {
-    params: Promise<{ id: string }>
-  }
+    params: Promise<{ id: string }>;
+  },
 ) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
 
     if (!user) {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params
+    const { id } = await params;
 
     const item = await prisma.item.findUnique({
       where: {
@@ -62,20 +59,20 @@ export async function GET(
         createdAt: true,
         updatedAt: true,
       },
-    })
+    });
 
     if (!item) {
       return NextResponse.json(
         {
-          message: 'Barang tidak ditemukan',
+          message: "Barang tidak ditemukan",
         },
-        { status: 404 }
-      )
+        { status: 404 },
+      );
     }
 
-    return NextResponse.json(successResponse(item))
+    return NextResponse.json(successResponse(item));
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }
 
@@ -84,68 +81,56 @@ export async function PUT(
   {
     params,
   }: {
-    params: Promise<{ id: string }>
-  }
+    params: Promise<{ id: string }>;
+  },
 ) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
 
-    if (
-      !user ||
-      (user.role !== 'ADMIN' &&
-        user.role !== 'WAREHOUSE_STAFF')
-    ) {
-      return NextResponse.json(
-        { message: 'Forbidden' },
-        { status: 403 }
-      )
+    if (!user || (user.role !== "ADMIN" && user.role !== "WAREHOUSE_STAFF")) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
     // CSRF protection
-    const csrfResult = await verifyCSRF(request)
+    const csrfResult = await verifyCSRF(request);
     if (!csrfResult.valid) {
-      return csrfResult.response!
+      return csrfResult.response!;
     }
 
-    const { id } = await params
-    const body = await request.json()
+    const { id } = await params;
+    const body = await request.json();
 
-    const data = itemUpdateSchema.parse(body)
+    const data = itemUpdateSchema.parse(body);
 
     const existingItem = await prisma.item.findUnique({
       where: {
         id,
       },
-    })
+    });
 
     if (!existingItem) {
       return NextResponse.json(
         {
-          message: 'Barang tidak ditemukan',
+          message: "Barang tidak ditemukan",
         },
-        { status: 404 }
-      )
+        { status: 404 },
+      );
     }
 
-    if (
-      data.code &&
-      data.code !== existingItem.code
-    ) {
-      const codeExists =
-        await prisma.item.findUnique({
-          where: {
-            code: data.code,
-          },
-        })
+    if (data.code && data.code !== existingItem.code) {
+      const codeExists = await prisma.item.findUnique({
+        where: {
+          code: data.code,
+        },
+      });
 
       if (codeExists) {
         return NextResponse.json(
           {
-            message:
-              'Kode barang sudah digunakan',
+            message: "Kode barang sudah digunakan",
           },
-          { status: 400 }
-        )
+          { status: 400 },
+        );
       }
     }
 
@@ -158,34 +143,31 @@ export async function PUT(
      * - ADJUSTMENT
      * - OPNAME RECONCILIATION
      */
-    const item = await prisma.$transaction(
-      async (tx) => {
-        const updatedItem =
-          await tx.item.update({
-            where: {
-              id,
-            },
-            data,
-          })
+    const item = await prisma.$transaction(async (tx) => {
+      const updatedItem = await tx.item.update({
+        where: {
+          id,
+        },
+        data,
+      });
 
-        await tx.auditLog.create({
-          data: {
-            userId: user.id,
-            action: 'UPDATE',
-            entity: 'ITEM',
-            entityId: updatedItem.id,
-            oldData: existingItem,
-            newData: updatedItem,
-          },
-        })
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "UPDATE",
+          entity: "ITEM",
+          entityId: updatedItem.id,
+          oldData: existingItem,
+          newData: updatedItem,
+        },
+      });
 
-        return updatedItem
-      }
-    )
+      return updatedItem;
+    });
 
-    return NextResponse.json(successResponse(item))
+    return NextResponse.json(successResponse(item));
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }
 
@@ -194,73 +176,65 @@ export async function DELETE(
   {
     params,
   }: {
-    params: Promise<{ id: string }>
-  }
+    params: Promise<{ id: string }>;
+  },
 ) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
 
-    if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { message: 'Forbidden' },
-        { status: 403 }
-      )
+    if (!user || user.role !== "ADMIN") {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
     // CSRF protection
-    const csrfResult = await verifyCSRF(request)
+    const csrfResult = await verifyCSRF(request);
     if (!csrfResult.valid) {
-      return csrfResult.response!
+      return csrfResult.response!;
     }
 
-    const { id } = await params
+    const { id } = await params;
 
     const existingItem = await prisma.item.findUnique({
       where: {
         id,
       },
-    })
+    });
 
     if (!existingItem) {
       return NextResponse.json(
         {
-          message: 'Barang tidak ditemukan',
+          message: "Barang tidak ditemukan",
         },
-        { status: 404 }
-      )
+        { status: 404 },
+      );
     }
 
-    const item = await prisma.$transaction(
-      async (tx) => {
-        const updatedItem =
-          await tx.item.update({
-            where: {
-              id,
-            },
-            data: {
-              isActive: false,
-            },
-          })
+    const item = await prisma.$transaction(async (tx) => {
+      const updatedItem = await tx.item.update({
+        where: {
+          id,
+        },
+        data: {
+          isActive: false,
+        },
+      });
 
-        await tx.auditLog.create({
-          data: {
-            userId: user.id,
-            action: 'DELETE',
-            entity: 'ITEM',
-            entityId: updatedItem.id,
-            oldData: existingItem,
-            newData: updatedItem,
-          },
-        })
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "DELETE",
+          entity: "ITEM",
+          entityId: updatedItem.id,
+          oldData: existingItem,
+          newData: updatedItem,
+        },
+      });
 
-        return updatedItem
-      }
-    )
+      return updatedItem;
+    });
 
-    return NextResponse.json(
-      successResponse(item, 'Barang berhasil dihapus')
-    )
+    return NextResponse.json(successResponse(item, "Barang berhasil dihapus"));
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }

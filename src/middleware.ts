@@ -1,65 +1,60 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { verifyToken, JWTPayload } from '@/lib/auth'
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { verifyToken, JWTPayload } from "@/lib/auth";
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login']
+const PUBLIC_PATHS = ["/login", "/api/auth/login"];
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname } = request.nextUrl;
 
   // Allow public paths
-  if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
-    return NextResponse.next()
+  if (PUBLIC_PATHS.some((path) => pathname.startsWith(path))) {
+    return NextResponse.next();
   }
 
   // Check for auth token
-  const token = request.cookies.get('auth-token')?.value
+  const token = request.cookies.get("auth-token")?.value;
 
   if (!token) {
     // API clients get a JSON 401 instead of an HTML redirect
-    if (pathname.startsWith('/api')) {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      )
+    if (pathname.startsWith("/api")) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   // Verify token
-  const payload = await verifyToken(token)
+  const payload = await verifyToken(token);
 
   if (!payload) {
-    if (pathname.startsWith('/api')) {
+    if (pathname.startsWith("/api")) {
       const response = NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      )
-      response.cookies.delete('auth-token')
-      return response
+        { message: "Unauthorized" },
+        { status: 401 },
+      );
+      response.cookies.delete("auth-token");
+      return response;
     }
 
-    const response = NextResponse.redirect(new URL('/login', request.url))
-    response.cookies.delete('auth-token')
-    return response
+    const response = NextResponse.redirect(new URL("/login", request.url));
+    response.cookies.delete("auth-token");
+    return response;
   }
 
   // Add user info to headers for server components
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-user-id', payload.userId)
-  requestHeaders.set('x-user-role', payload.role)
-  requestHeaders.set('x-user-email', payload.email)
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-user-id", payload.userId);
+  requestHeaders.set("x-user-role", payload.role);
+  requestHeaders.set("x-user-email", payload.email);
 
   return NextResponse.next({
     request: { headers: requestHeaders },
-  })
+  });
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
-  ],
-}
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|public/).*)"],
+};

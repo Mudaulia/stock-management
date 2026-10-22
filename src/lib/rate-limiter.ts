@@ -1,65 +1,65 @@
-import Redis from 'ioredis'
+import Redis from "ioredis";
 
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
   maxRetriesPerRequest: 3,
   retryStrategy: (times) => {
-    if (times > 3) return null
-    return Math.min(times * 100, 3000)
+    if (times > 3) return null;
+    return Math.min(times * 100, 3000);
   },
   lazyConnect: true,
   enableOfflineQueue: false,
-})
+});
 
-redis.on('error', (err) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.error('Redis connection error:', err)
+redis.on("error", (err) => {
+  if (process.env.NODE_ENV === "development") {
+    console.error("Redis connection error:", err);
   }
-})
+});
 
 /**
  * Single-flight connection: connect at most once until the status leaves
  * "connecting"/"connecting" states. Calling `connect()` on an already
  * ready client throws — which previously caused false fail-open.
  */
-let connecting: Promise<void> | null = null
+let connecting: Promise<void> | null = null;
 
 async function ensureConnected(): Promise<void> {
-  if (redis.status === 'ready') return
-  if (redis.status === 'connecting') {
-    await (connecting ?? redis.connect())
-    return
+  if (redis.status === "ready") return;
+  if (redis.status === "connecting") {
+    await (connecting ?? redis.connect());
+    return;
   }
-  connecting = redis.connect()
+  connecting = redis.connect();
   try {
-    await connecting
+    await connecting;
   } finally {
-    connecting = null
+    connecting = null;
   }
 }
 
 export interface RateLimitConfig {
-  windowMs: number
-  maxRequests: number
-  keyPrefix?: string
+  windowMs: number;
+  maxRequests: number;
+  keyPrefix?: string;
 }
 
 export interface RateLimitResult {
-  success: boolean
-  remaining: number
-  resetTime: number
-  total: number
+  success: boolean;
+  remaining: number;
+  resetTime: number;
+  total: number;
 }
 
 export async function rateLimit(
   identifier: string,
-  config: RateLimitConfig
+  config: RateLimitConfig,
 ): Promise<RateLimitResult> {
-  const key = `${config.keyPrefix || 'ratelimit'}:${identifier}`
-  const now = Date.now()
-  const windowStart = now - config.windowMs
+  const key = `${config.keyPrefix || "ratelimit"}:${identifier}`;
+  const now = Date.now();
+  const windowStart = now - config.windowMs;
 
   try {
-    await ensureConnected()
+    await ensureConnected();
   } catch {
     // If Redis is not available, allow the request (fail-open for availability)
     return {
@@ -67,21 +67,21 @@ export async function rateLimit(
       remaining: config.maxRequests,
       resetTime: now + config.windowMs,
       total: config.maxRequests,
-    }
+    };
   }
 
-  const pipeline = redis.pipeline()
-  pipeline.zremrangebyscore(key, 0, windowStart)
-  pipeline.zcard(key)
-  pipeline.zadd(key, now, `${now}-${Math.random()}`)
-  pipeline.expire(key, Math.ceil(config.windowMs / 1000))
+  const pipeline = redis.pipeline();
+  pipeline.zremrangebyscore(key, 0, windowStart);
+  pipeline.zcard(key);
+  pipeline.zadd(key, now, `${now}-${Math.random()}`);
+  pipeline.expire(key, Math.ceil(config.windowMs / 1000));
 
-  let results: [error: Error | null, result: unknown][] | null
+  let results: [error: Error | null, result: unknown][] | null;
   try {
-    results = await pipeline.exec()
+    results = await pipeline.exec();
   } catch {
     // Pipeline failures (e.g. connection dropped mid-request) also fail open
-    results = null
+    results = null;
   }
 
   if (!results) {
@@ -90,25 +90,27 @@ export async function rateLimit(
       remaining: config.maxRequests,
       resetTime: now + config.windowMs,
       total: config.maxRequests,
-    }
+    };
   }
 
-  const currentCount = (results[1][1] as number) || 0
-  const remaining = Math.max(0, config.maxRequests - currentCount - 1)
-  const success = currentCount < config.maxRequests
+  const currentCount = (results[1][1] as number) || 0;
+  const remaining = Math.max(0, config.maxRequests - currentCount - 1);
+  const success = currentCount < config.maxRequests;
 
   return {
     success,
     remaining,
     resetTime: now + config.windowMs,
     total: config.maxRequests,
-  }
+  };
 }
 
-export function getRateLimitHeaders(result: RateLimitResult): Record<string, string> {
+export function getRateLimitHeaders(
+  result: RateLimitResult,
+): Record<string, string> {
   return {
-    'X-RateLimit-Limit': result.total.toString(),
-    'X-RateLimit-Remaining': result.remaining.toString(),
-    'X-RateLimit-Reset': Math.ceil(result.resetTime / 1000).toString(),
-  }
+    "X-RateLimit-Limit": result.total.toString(),
+    "X-RateLimit-Remaining": result.remaining.toString(),
+    "X-RateLimit-Reset": Math.ceil(result.resetTime / 1000).toString(),
+  };
 }

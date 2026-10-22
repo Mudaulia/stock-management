@@ -1,35 +1,25 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Plus, Download, FileText } from "lucide-react"
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus, Download, FileText } from "lucide-react";
 
 export interface PageHeaderProps {
-  title: string
-  description?: string
-  actionLabel?: string
-  actionIcon?: React.ReactNode
-  onAction?: () => void
+  title: string;
+  description?: string;
+  actionLabel?: string;
+  actionIcon?: React.ReactNode;
+  onAction?: () => void;
   actionVariant?:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link"
-  secondaryActionLabel?: string
-  secondaryActionIcon?: React.ReactNode
-  onSecondaryAction?: () => void
+    "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  secondaryActionLabel?: string;
+  secondaryActionIcon?: React.ReactNode;
+  onSecondaryAction?: () => void;
   secondaryActionVariant?:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link"
-  className?: string
+    "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  className?: string;
 }
 
 export function PageHeader({
@@ -49,23 +39,18 @@ export function PageHeader({
     <div
       className={cn(
         "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4",
-        className
+        className,
       )}
     >
       <div>
         <h1 className="text-2xl font-bold">{title}</h1>
         {description && (
-          <p className="text-sm text-muted-foreground mt-1">
-            {description}
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
         )}
       </div>
       <div className="flex items-center gap-2">
         {secondaryActionLabel && onSecondaryAction && (
-          <Button
-            variant={secondaryActionVariant}
-            onClick={onSecondaryAction}
-          >
+          <Button variant={secondaryActionVariant} onClick={onSecondaryAction}>
             {secondaryActionIcon}
             {secondaryActionLabel}
           </Button>
@@ -78,7 +63,7 @@ export function PageHeader({
         )}
       </div>
     </div>
-  )
+  );
 }
 
 export function SectionHeader({
@@ -88,22 +73,27 @@ export function SectionHeader({
   actionIcon,
   onAction,
   className,
-}: Omit<PageHeaderProps, "secondaryActionLabel" | "secondaryActionIcon" | "onSecondaryAction" | "actionVariant" | "secondaryActionVariant"> & {
-  className?: string
+}: Omit<
+  PageHeaderProps,
+  | "secondaryActionLabel"
+  | "secondaryActionIcon"
+  | "onSecondaryAction"
+  | "actionVariant"
+  | "secondaryActionVariant"
+> & {
+  className?: string;
 }) {
   return (
     <div
       className={cn(
         "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4",
-        className
+        className,
       )}
     >
       <div>
         <h2 className="text-lg font-semibold">{title}</h2>
         {description && (
-          <p className="text-sm text-muted-foreground">
-            {description}
-          </p>
+          <p className="text-sm text-muted-foreground">{description}</p>
         )}
       </div>
       {actionLabel && onAction && (
@@ -113,5 +103,5 @@ export function SectionHeader({
         </Button>
       )}
     </div>
-  )
+  );
 }

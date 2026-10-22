@@ -1,5 +1,5 @@
-import { ZodError } from 'zod'
-import { NextResponse } from 'next/server'
+import { ZodError } from "zod";
+import { NextResponse } from "next/server";
 
 /**
  * Standardized API response utilities.
@@ -17,22 +17,22 @@ import { NextResponse } from 'next/server'
  */
 
 export interface Pagination {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 export interface ApiSuccessResponse<T> {
-  data: T
-  pagination?: Pagination
-  summary?: Record<string, unknown>
+  data: T;
+  pagination?: Pagination;
+  summary?: Record<string, unknown>;
 }
 
 export interface ApiErrorResponse {
-  message: string
-  errors?: unknown[]
-  code?: string
+  message: string;
+  errors?: unknown[];
+  code?: string;
 }
 
 /**
@@ -41,12 +41,12 @@ export interface ApiErrorResponse {
 export function paginatedResponse<T>(
   data: T,
   pagination: Pagination,
-  summary?: Record<string, unknown>
+  summary?: Record<string, unknown>,
 ): ApiSuccessResponse<T> {
   if (summary) {
-    return { data, pagination, summary }
+    return { data, pagination, summary };
   }
-  return { data, pagination }
+  return { data, pagination };
 }
 
 /**
@@ -54,12 +54,15 @@ export function paginatedResponse<T>(
  */
 export function successResponse<T>(
   data: T,
-  summary?: Record<string, unknown> | string
+  summary?: Record<string, unknown> | string,
 ): ApiSuccessResponse<T> {
   if (summary) {
-    return { data, summary: typeof summary === 'string' ? { message: summary } : summary }
+    return {
+      data,
+      summary: typeof summary === "string" ? { message: summary } : summary,
+    };
   }
-  return { data }
+  return { data };
 }
 
 /**
@@ -70,12 +73,12 @@ export function successResponse<T>(
  */
 export function zodErrorResponse(
   error: ZodError,
-  message = 'Validasi gagal'
+  message = "Validasi gagal",
 ): ApiErrorResponse {
   return {
     message,
     errors: error.errors,
-  }
+  };
 }
 
 /**
@@ -84,38 +87,34 @@ export function zodErrorResponse(
 export function errorResponse(
   message: string,
   status: number,
-  code?: string
+  code?: string,
 ): NextResponse {
-  const body: ApiErrorResponse = { message }
+  const body: ApiErrorResponse = { message };
   if (code) {
-    body.code = code
+    body.code = code;
   }
-  return NextResponse.json(body, { status })
+  return NextResponse.json(body, { status });
 }
 
 /**
  * Handle a ZodError and return a standardized 400 response.
  */
 export function handleZodError(error: ZodError): NextResponse {
-  return NextResponse.json(zodErrorResponse(error), { status: 400 })
+  return NextResponse.json(zodErrorResponse(error), { status: 400 });
 }
 
 /**
  * Custom error class for domain-specific errors with a code.
  */
 export class ApiError extends Error {
-  public readonly statusCode: number
-  public readonly code?: string
+  public readonly statusCode: number;
+  public readonly code?: string;
 
-  constructor(
-    message: string,
-    statusCode: number,
-    code?: string
-  ) {
-    super(message)
-    this.name = 'ApiError'
-    this.statusCode = statusCode
-    this.code = code
+  constructor(message: string, statusCode: number, code?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.statusCode = statusCode;
+    this.code = code;
   }
 }
 
@@ -127,10 +126,10 @@ export class ApiError extends Error {
  * adalah kegagalan internal → 500 generic, TIDAK boleh bocor ke client.
  */
 const DOMAIN_ERROR_NAMES = new Set([
-  'StaleOpnameError',
-  'StockConcurrencyError',
-  'StockUnavailableError',
-])
+  "StaleOpnameError",
+  "StockConcurrencyError",
+  "StockUnavailableError",
+]);
 
 /**
  * Handle any error in a standardized way.
@@ -142,22 +141,22 @@ const DOMAIN_ERROR_NAMES = new Set([
  */
 export function handleApiError(error: unknown): NextResponse {
   if (error instanceof ZodError) {
-    return handleZodError(error)
+    return handleZodError(error);
   }
 
   if (error instanceof ApiError) {
-    return errorResponse(error.message, error.statusCode, error.code)
+    return errorResponse(error.message, error.statusCode, error.code);
   }
 
   // Error domain kustom (mis. StaleOpnameError, StockConcurrencyError)
   // membawa pesan bermakna untuk user — kirim sebagai 400, bukan 500.
   if (error instanceof Error && DOMAIN_ERROR_NAMES.has(error.name)) {
-    return errorResponse(error.message, 400)
+    return errorResponse(error.message, 400);
   }
 
   // Log error in development only
-  if (process.env.NODE_ENV === 'development') {
-    console.error('Unhandled API error:', error)
+  if (process.env.NODE_ENV === "development") {
+    console.error("Unhandled API error:", error);
   }
-  return errorResponse('Terjadi kesalahan server', 500)
+  return errorResponse("Terjadi kesalahan server", 500);
 }

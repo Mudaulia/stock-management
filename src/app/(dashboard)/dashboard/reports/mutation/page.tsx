@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { Suspense, useCallback } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,38 +30,70 @@ import { bem, bemVariant } from "@/lib/bem";
 import { useMutationReport, useExportMutationReport } from "@/hooks/use-api";
 import { mutationReportItemSchema, mutationSummarySchema } from "@/lib/schemas";
 import { SkeletonTable } from "@/components/ui/skeleton";
-import { useKeyboardNavigation, useRowSelection } from "@/hooks/use-keyboard-navigation";
+import {
+  useKeyboardNavigation,
+  useRowSelection,
+} from "@/hooks/use-keyboard-navigation";
 import { Download } from "lucide-react";
 import { EmptyState, NoData } from "@/components/ui/empty-state";
 import { useDebounce } from "@/hooks";
+import { useUrlState } from "@/hooks/use-url-state";
 
 type MutationTransaction = z.infer<typeof mutationReportItemSchema>;
 type MutationSummary = z.infer<typeof mutationSummarySchema>;
 
 export default function MutationReportPage() {
-  const { showSuccess, showError } = useToast();
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 300);
-  const [typeFilter, setTypeFilter] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [itemId, setItemId] = useState("");
+  return (
+    <Suspense fallback={null}>
+      <MutationReportContent />
+    </Suspense>
+  );
+}
 
-  // Reset ke halaman 1 saat filter berubah (hindari hasil kosong karena masih di halaman akhir)
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [debouncedSearch, typeFilter, startDate, endDate, itemId]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 50,
-    total: 0,
-    totalPages: 0,
-  });
+function MutationReportContent() {
+  const { showSuccess, showError } = useToast();
+
+  // URL-backed filter/pagination state (shareable links)
+  const [searchParam, setSearchParam] = useUrlState("q");
+  const [typeFilter, setTypeFilter] = useUrlState("type");
+  const [startDate, setStartDate] = useUrlState("startDate");
+  const [endDate, setEndDate] = useUrlState("endDate");
+  const [pageParam, setPageParam] = useUrlState("page");
+  const [limitParam, setLimitParam] = useUrlState("limit");
+
+  const search = searchParam;
+  const setSearch = (value: string) => {
+    setSearchParam(value);
+    setPageParam("");
+  };
+  const handleTypeFilterChange = (value: string) => {
+    setTypeFilter(value);
+    setPageParam("");
+  };
+  const setStartDateAndResetPage = (value: string) => {
+    setStartDate(value);
+    setPageParam("");
+  };
+  const setEndDateAndResetPage = (value: string) => {
+    setEndDate(value);
+    setPageParam("");
+  };
+
+  const page = Math.max(1, parseInt(pageParam, 10) || 1);
+  const limit = Math.max(1, parseInt(limitParam, 10) || 50);
+  const debouncedSearch = useDebounce(search, 300);
+  const itemId = "";
 
   // React Query hooks
-  const { data: reportData, isLoading, isError, error, refetch } = useMutationReport({
-    page: pagination.page,
-    limit: pagination.limit,
+  const {
+    data: reportData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useMutationReport({
+    page,
+    limit,
     search: debouncedSearch,
     type: typeFilter || undefined,
     startDate: startDate || undefined,
@@ -72,43 +104,58 @@ export default function MutationReportPage() {
   const transactions = reportData?.data ?? [];
   const summary = reportData?.summary ?? {};
   const paginationData = reportData?.pagination;
+  const pagination = {
+    page,
+    limit,
+    total: paginationData?.total ?? 0,
+    totalPages: paginationData?.totalPages ?? 1,
+  };
 
   // Keyboard navigation
-  const { tableRef, selectedIndex, setSelectedIndex } = useKeyboardNavigation<MutationTransaction>({
-    rowCount: transactions.length,
-    enabled: !isLoading && transactions.length > 0,
-  });
+  const { tableRef, selectedIndex, setSelectedIndex } =
+    useKeyboardNavigation<MutationTransaction>({
+      rowCount: transactions.length,
+      enabled: !isLoading && transactions.length > 0,
+    });
 
   // Row selection for bulk actions
-  const { selectedIds, selectedCount, toggleRow, toggleAll, clearSelection, isSelected } = useRowSelection<MutationTransaction>()
+  const {
+    selectedIds,
+    selectedCount,
+    toggleRow,
+    toggleAll,
+    clearSelection,
+    isSelected,
+  } = useRowSelection<MutationTransaction>();
 
   // Export mutation
   const exportMutation = useExportMutationReport({
     onSuccess: (blob) => {
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `mutation-report-export-${new Date().toISOString().split('T')[0]}.csv`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-      showSuccess('Berhasil', 'Laporan mutasi berhasil diekspor')
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `mutation-report-export-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showSuccess("Berhasil", "Laporan mutasi berhasil diekspor");
     },
-    onError: (err) => showError('Error', err.message),
-  })
+    onError: (err) => showError("Error", err.message),
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPagination({ ...pagination, page: 1 });
+    setPageParam("");
   };
 
-  const handlePageChange = (page: number) => {
-    setPagination({ ...pagination, page });
+  const handlePageChange = (newPage: number) => {
+    setPageParam(String(newPage));
   };
 
-  const handleLimitChange = (limit: number) => {
-    setPagination({ ...pagination, limit, page: 1 });
+  const handleLimitChange = (newLimit: number) => {
+    setLimitParam(String(newLimit));
+    setPageParam("");
   };
 
   const getTypeBadge = (type: string) => {
@@ -123,7 +170,12 @@ export default function MutationReportPage() {
       ADJUSTMENT: "Penyesuaian",
     };
     return (
-      <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", variants[type as keyof typeof variants])}>
+      <span
+        className={cn(
+          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+          variants[type as keyof typeof variants],
+        )}
+      >
         {labels[type as keyof typeof labels]}
       </span>
     );
@@ -148,8 +200,12 @@ export default function MutationReportPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Laporan Mutasi Stok</h1>
-          <p className="text-gray-500 mt-1">Riwayat pergerakan stok barang (masuk, keluar, penyesuaian)</p>
+          <h1 className="text-3xl font-bold text-foreground">
+            Laporan Mutasi Stok
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Riwayat pergerakan stok barang (masuk, keluar, penyesuaian)
+          </p>
         </div>
       </div>
 
@@ -158,11 +214,16 @@ export default function MutationReportPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 rounded-lg"><Package className="h-5 w-5 text-blue-600" /></div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Package className="h-5 w-5 text-blue-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500">Total Transaksi</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {Object.values(summary).reduce((acc, curr) => acc + curr.transactionCount, 0)}
+                <p className="text-sm text-muted-foreground">Total Transaksi</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {Object.values(summary).reduce(
+                    (acc, curr) => acc + curr.transactionCount,
+                    0,
+                  )}
                 </p>
               </div>
             </div>
@@ -171,10 +232,14 @@ export default function MutationReportPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-100 rounded-lg"><Package className="h-5 w-5 text-green-600" /></div>
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Package className="h-5 w-5 text-green-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500">Total Stok Masuk</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-muted-foreground">
+                  Total Stok Masuk
+                </p>
+                <p className="text-2xl font-bold text-foreground">
                   {summary.STOCK_IN?.totalQuantity || 0}
                 </p>
               </div>
@@ -184,10 +249,14 @@ export default function MutationReportPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-red-100 rounded-lg"><Package className="h-5 w-5 text-red-600" /></div>
+              <div className="p-3 bg-red-100 rounded-lg">
+                <Package className="h-5 w-5 text-red-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500">Total Stok Keluar</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-muted-foreground">
+                  Total Stok Keluar
+                </p>
+                <p className="text-2xl font-bold text-foreground">
                   {summary.STOCK_OUT?.totalQuantity || 0}
                 </p>
               </div>
@@ -197,10 +266,14 @@ export default function MutationReportPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-100 rounded-lg"><Filter className="h-5 w-5 text-yellow-600" /></div>
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <Filter className="h-5 w-5 text-yellow-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500">Total Penyesuaian</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-muted-foreground">
+                  Total Penyesuaian
+                </p>
+                <p className="text-2xl font-bold text-foreground">
                   {summary.ADJUSTMENT?.totalQuantity || 0}
                 </p>
               </div>
@@ -212,7 +285,10 @@ export default function MutationReportPage() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-col sm:flex-row gap-4"
+          >
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -224,8 +300,10 @@ export default function MutationReportPage() {
             </div>
 
             <div className="w-[180px]">
-              <Label className="block text-sm font-medium text-gray-700 mb-1">Tipe</Label>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <Label className="block text-sm font-medium text-foreground mb-1">
+                Tipe
+              </Label>
+              <Select value={typeFilter} onValueChange={handleTypeFilterChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Semua tipe" />
                 </SelectTrigger>
@@ -239,15 +317,16 @@ export default function MutationReportPage() {
             </div>
 
             <div className="w-[180px]">
-              <Label className="block text-sm font-medium text-gray-700 mb-1">Dari Tanggal</Label>
+              <Label className="block text-sm font-medium text-foreground mb-1">
+                Dari Tanggal
+              </Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   type="date"
                   value={startDate}
                   onChange={(e) => {
-                    setStartDate(e.target.value);
-                    setPagination((prev) => ({ ...prev, page: 1 }));
+                    setStartDateAndResetPage(e.target.value);
                   }}
                   className="pl-10"
                 />
@@ -255,15 +334,16 @@ export default function MutationReportPage() {
             </div>
 
             <div className="w-[180px]">
-              <Label className="block text-sm font-medium text-gray-700 mb-1">Sampai Tanggal</Label>
+              <Label className="block text-sm font-medium text-foreground mb-1">
+                Sampai Tanggal
+              </Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   type="date"
                   value={endDate}
                   onChange={(e) => {
-                    setEndDate(e.target.value);
-                    setPagination((prev) => ({ ...prev, page: 1 }));
+                    setEndDateAndResetPage(e.target.value);
                   }}
                   className="pl-10"
                 />
@@ -281,7 +361,10 @@ export default function MutationReportPage() {
           ) : isError ? (
             <EmptyState
               title="Gagal memuat data"
-              description={error?.message ?? "Terjadi kesalahan saat memuat laporan mutasi stok. Silakan coba lagi."}
+              description={
+                error?.message ??
+                "Terjadi kesalahan saat memuat laporan mutasi stok. Silakan coba lagi."
+              }
               actionLabel="Coba Lagi"
               onAction={() => refetch()}
             />
@@ -290,7 +373,7 @@ export default function MutationReportPage() {
               title="Tidak ada data mutasi stok"
               description="Belum ada transaksi stok yang tercatat."
               actionLabel="Lihat Stok Masuk"
-              onAction={() => window.location.href = '/dashboard/stock-in'}
+              onAction={() => (window.location.href = "/dashboard/stock-in")}
             />
           ) : (
             <>
@@ -304,7 +387,9 @@ export default function MutationReportPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => exportMutation.mutate({ ids: Array.from(selectedIds) })}
+                      onClick={() =>
+                        exportMutation.mutate({ ids: Array.from(selectedIds) })
+                      }
                       disabled={exportMutation.isPending}
                     >
                       <Download className="mr-2 h-4 w-4" />
@@ -323,9 +408,14 @@ export default function MutationReportPage() {
                       <TableHead className="w-12">
                         <input
                           type="checkbox"
-                          checked={selectedCount === transactions.length && transactions.length > 0}
-                          onChange={() => toggleAll(transactions.map(t => t.id))}
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          checked={
+                            selectedCount === transactions.length &&
+                            transactions.length > 0
+                          }
+                          onChange={() =>
+                            toggleAll(transactions.map((t) => t.id))
+                          }
+                          className="h-4 w-4 rounded border text-primary focus:ring-primary"
                           aria-label="Pilih semua"
                         />
                       </TableHead>
@@ -340,31 +430,50 @@ export default function MutationReportPage() {
                   </TableHeader>
                   <TableBody>
                     {transactions.map((tx, index) => {
-                      const globalIndex = (pagination.page - 1) * pagination.limit + index + 1;
-                      const rowSelected = isSelected(tx.id)
+                      const globalIndex =
+                        (pagination.page - 1) * pagination.limit + index + 1;
+                      const rowSelected = isSelected(tx.id);
                       return (
-                        <TableRow key={tx.id} className={cn(rowSelected && "bg-primary/5")} onClick={() => toggleRow(tx.id)}>
+                        <TableRow
+                          key={tx.id}
+                          className={cn(rowSelected && "bg-primary/5")}
+                          onClick={() => toggleRow(tx.id)}
+                        >
                           <TableCell className="w-12">
                             <input
                               type="checkbox"
                               checked={rowSelected}
-                              onChange={(e) => { e.stopPropagation(); toggleRow(tx.id); }}
-                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                toggleRow(tx.id);
+                              }}
+                              className="h-4 w-4 rounded border text-primary focus:ring-primary"
                               aria-label={`Pilih transaksi ${tx.id}`}
                             />
                           </TableCell>
                           <TableCell>
                             <div className="font-medium">{tx.item.name}</div>
-                            <div className="text-sm text-muted-foreground font-mono">{tx.item.code}</div>
+                            <div className="text-sm text-muted-foreground font-mono">
+                              {tx.item.code}
+                            </div>
                           </TableCell>
                           <TableCell>{getTypeBadge(tx.type)}</TableCell>
-                          <TableCell className={cn("text-right font-mono", getQuantityColor(tx.type))}>
-                            {getQuantityDisplay(tx.type, tx.quantity)} {tx.item.unit}
+                          <TableCell
+                            className={cn(
+                              "text-right font-mono",
+                              getQuantityColor(tx.type),
+                            )}
+                          >
+                            {getQuantityDisplay(tx.type, tx.quantity)}{" "}
+                            {tx.item.unit}
                           </TableCell>
                           <TableCell>{tx.reference || "-"}</TableCell>
                           <TableCell>{tx.notes || "-"}</TableCell>
                           <TableCell className="whitespace-nowrap">
-                            {format(new Date(tx.transactionDate), "dd MMM yyyy HH:mm")}
+                            {format(
+                              new Date(tx.transactionDate),
+                              "dd MMM yyyy HH:mm",
+                            )}
                           </TableCell>
                           <TableCell>{tx.createdBy.fullName}</TableCell>
                         </TableRow>
@@ -377,32 +486,44 @@ export default function MutationReportPage() {
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                           <div className="text-sm text-muted-foreground">
                             Menampilkan{" "}
-                            {((pagination.page - 1) * pagination.limit) + 1}{" "}
-                            -{" "}
-                            {Math.min(pagination.page * pagination.limit, paginationData?.total ?? 0)}{" "}
-                            dari{" "}
-                            {paginationData?.total ?? 0}{" "}
-                            data
+                            {(pagination.page - 1) * pagination.limit + 1} -{" "}
+                            {Math.min(
+                              pagination.page * pagination.limit,
+                              paginationData?.total ?? 0,
+                            )}{" "}
+                            dari {paginationData?.total ?? 0} data
                           </div>
                           <div className="flex items-center gap-2">
                             <Select
                               value={pagination.limit.toString()}
-                              onValueChange={(v) => handleLimitChange(parseInt(v))}
+                              onValueChange={(v) =>
+                                handleLimitChange(parseInt(v))
+                              }
                             >
                               <SelectTrigger className="w-[100px]">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="10">10 per halaman</SelectItem>
-                                <SelectItem value="25">25 per halaman</SelectItem>
-                                <SelectItem value="50">50 per halaman</SelectItem>
-                                <SelectItem value="100">100 per halaman</SelectItem>
+                                <SelectItem value="10">
+                                  10 per halaman
+                                </SelectItem>
+                                <SelectItem value="25">
+                                  25 per halaman
+                                </SelectItem>
+                                <SelectItem value="50">
+                                  50 per halaman
+                                </SelectItem>
+                                <SelectItem value="100">
+                                  100 per halaman
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handlePageChange(pagination.page - 1)}
+                              onClick={() =>
+                                handlePageChange(pagination.page - 1)
+                              }
                               disabled={pagination.page <= 1}
                             >
                               Sebelumnya
@@ -410,13 +531,19 @@ export default function MutationReportPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handlePageChange(pagination.page + 1)}
-                              disabled={pagination.page >= (paginationData?.totalPages ?? 1)}
+                              onClick={() =>
+                                handlePageChange(pagination.page + 1)
+                              }
+                              disabled={
+                                pagination.page >=
+                                (paginationData?.totalPages ?? 1)
+                              }
                             >
                               Selanjutnya
                             </Button>
                             <span className="flex items-center px-2 text-sm text-muted-foreground">
-                              Halaman {pagination.page} dari {paginationData?.totalPages ?? 1}
+                              Halaman {pagination.page} dari{" "}
+                              {paginationData?.totalPages ?? 1}
                             </span>
                           </div>
                         </div>

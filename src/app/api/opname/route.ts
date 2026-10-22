@@ -1,62 +1,72 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { OpnameStatus, type Prisma } from '@prisma/client'
-import { z } from 'zod'
-import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
-import { verifyCSRF } from '@/lib/csrf'
+import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { OpnameStatus, type Prisma } from "@prisma/client";
+import { z } from "zod";
+import {
+  handleApiError,
+  paginatedResponse,
+  successResponse,
+} from "@/lib/api-response";
+import { verifyCSRF } from "@/lib/csrf";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 const opnameSchema = z.object({
-  itemId: z.string().min(1, 'Barang wajib dipilih'),
-  physicalStock: z.coerce.number().int().nonnegative('Stok fisik tidak boleh negatif'),
+  itemId: z.string().min(1, "Barang wajib dipilih"),
+  physicalStock: z.coerce
+    .number()
+    .int()
+    .nonnegative("Stok fisik tidak boleh negatif"),
   notes: z.string().optional(),
   opnameDate: z
     .string()
-    .min(1, 'Tanggal wajib diisi')
-    .refine((val) => !Number.isNaN(new Date(val).getTime()), 'Format tanggal tidak valid'),
-})
+    .min(1, "Tanggal wajib diisi")
+    .refine(
+      (val) => !Number.isNaN(new Date(val).getTime()),
+      "Format tanggal tidak valid",
+    ),
+});
 
 const reconcileSchema = z.object({
   notes: z.string().optional(),
-})
+});
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const search = searchParams.get('search') || ''
-    const status = searchParams.get('status') || ''
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") || "";
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
-    const skip = (page - 1) * limit
+    const skip = (page - 1) * limit;
 
-    const where: Prisma.StockOpnameWhereInput = {}
+    const where: Prisma.StockOpnameWhereInput = {};
 
     if (search) {
       where.OR = [
         { item: { code: { contains: search } } },
         { item: { name: { contains: search } } },
         { notes: { contains: search } },
-      ]
+      ];
     }
 
-    if (status && ['PENDING', 'RECONCILED', 'CANCELLED'].includes(status)) {
-      where.status = status as OpnameStatus
+    if (status && ["PENDING", "RECONCILED", "CANCELLED"].includes(status)) {
+      where.status = status as OpnameStatus;
     }
 
     if (startDate || endDate) {
-      where.opnameDate = {}
-      if (startDate) where.opnameDate.gte = new Date(startDate)
-      if (endDate) where.opnameDate.lte = new Date(endDate)
+      where.opnameDate = {};
+      if (startDate) where.opnameDate.gte = new Date(startDate);
+      if (endDate) where.opnameDate.lte = new Date(endDate);
     }
 
     const [opnames, total] = await Promise.all([
@@ -64,21 +74,31 @@ export async function GET(request: NextRequest) {
         where,
         skip,
         take: limit,
-        orderBy: { opnameDate: 'desc' },
+        orderBy: { opnameDate: "desc" },
         include: {
           item: {
-            select: { id: true, code: true, name: true, unit: true, currentStock: true },
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              unit: true,
+              currentStock: true,
+            },
           },
           createdBy: {
             select: { id: true, username: true, fullName: true },
           },
           reconciliation: {
-            select: { id: true, adjustedAt: true, adjustedBy: { select: { fullName: true } } },
+            select: {
+              id: true,
+              adjustedAt: true,
+              adjustedBy: { select: { fullName: true } },
+            },
           },
         },
       }),
       prisma.stockOpname.count({ where }),
-    ])
+    ]);
 
     return NextResponse.json(
       paginatedResponse(opnames, {
@@ -86,73 +106,85 @@ export async function GET(request: NextRequest) {
         limit,
         total,
         totalPages: Math.ceil(total / limit),
-      })
-    )
+      }),
+    );
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   // CSRF protection
-  const csrfResult = await verifyCSRF(request)
+  const csrfResult = await verifyCSRF(request);
   if (!csrfResult.valid) {
-    return csrfResult.response!
+    return csrfResult.response!;
   }
 
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     // Role check: Only ADMIN and WAREHOUSE_STAFF can create opname
-    if (user.role !== 'ADMIN' && user.role !== 'WAREHOUSE_STAFF') {
-      return NextResponse.json({ message: 'Forbidden: Insufficient permissions' }, { status: 403 })
+    if (user.role !== "ADMIN" && user.role !== "WAREHOUSE_STAFF") {
+      return NextResponse.json(
+        { message: "Forbidden: Insufficient permissions" },
+        { status: 403 },
+      );
     }
 
-    const body = await request.json()
-    const validation = opnameSchema.safeParse(body)
+    const body = await request.json();
+    const validation = opnameSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json(
-        { message: 'Validasi gagal', errors: validation.error.errors },
-        { status: 400 }
-      )
+        { message: "Validasi gagal", errors: validation.error.errors },
+        { status: 400 },
+      );
     }
 
-    const { itemId, physicalStock, notes, opnameDate } = validation.data
+    const { itemId, physicalStock, notes, opnameDate } = validation.data;
 
     // Check if item exists and is active
     const item = await prisma.item.findUnique({
       where: { id: itemId },
-    })
+    });
 
     if (!item) {
-      return NextResponse.json({ message: 'Barang tidak ditemukan' }, { status: 404 })
+      return NextResponse.json(
+        { message: "Barang tidak ditemukan" },
+        { status: 404 },
+      );
     }
 
     if (!item.isActive) {
-      return NextResponse.json({ message: 'Barang tidak aktif' }, { status: 400 })
+      return NextResponse.json(
+        { message: "Barang tidak aktif" },
+        { status: 400 },
+      );
     }
 
     // Check if there's already a pending opname for this item
     const existingPending = await prisma.stockOpname.findFirst({
       where: {
         itemId,
-        status: 'PENDING',
+        status: "PENDING",
       },
-    })
+    });
 
     if (existingPending) {
       return NextResponse.json(
-        { message: 'Masih ada opname pending untuk barang ini. Selesaikan atau batalkan terlebih dahulu.' },
-        { status: 400 }
-      )
+        {
+          message:
+            "Masih ada opname pending untuk barang ini. Selesaikan atau batalkan terlebih dahulu.",
+        },
+        { status: 400 },
+      );
     }
 
-    const systemStock = item.currentStock
-    const difference = physicalStock - systemStock
+    const systemStock = item.currentStock;
+    const difference = physicalStock - systemStock;
 
     const opname = await prisma.$transaction(async (tx) => {
       const newOpname = await tx.stockOpname.create({
@@ -164,24 +196,30 @@ export async function POST(request: NextRequest) {
           notes,
           opnameDate: new Date(opnameDate),
           createdById: user.id,
-          status: 'PENDING',
+          status: "PENDING",
         },
         include: {
           item: {
-            select: { id: true, code: true, name: true, unit: true, currentStock: true },
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              unit: true,
+              currentStock: true,
+            },
           },
           createdBy: {
             select: { id: true, username: true, fullName: true },
           },
         },
-      })
+      });
 
       // Audit log
       await tx.auditLog.create({
         data: {
           userId: user.id,
-          action: 'CREATE',
-          entity: 'StockOpname',
+          action: "CREATE",
+          entity: "StockOpname",
           entityId: newOpname.id,
           newData: {
             itemId,
@@ -190,16 +228,16 @@ export async function POST(request: NextRequest) {
             difference,
             notes,
             opnameDate,
-            status: 'PENDING',
+            status: "PENDING",
           },
         },
-      })
+      });
 
-      return newOpname
-    })
+      return newOpname;
+    });
 
-    return NextResponse.json(successResponse(opname), { status: 201 })
+    return NextResponse.json(successResponse(opname), { status: 201 });
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }

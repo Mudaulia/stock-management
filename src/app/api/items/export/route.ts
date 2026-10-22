@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/auth'
-import { z } from 'zod'
-import { handleApiError } from '@/lib/api-response'
-import { verifyCSRF } from '@/lib/csrf'
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
+import { z } from "zod";
+import { handleApiError } from "@/lib/api-response";
+import { verifyCSRF } from "@/lib/csrf";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 const exportQuerySchema = z.object({
   ids: z.string().optional(),
@@ -13,61 +13,47 @@ const exportQuerySchema = z.object({
   isActive: z
     .string()
     .optional()
-    .transform((val) => (val === undefined ? undefined : val === 'true')),
+    .transform((val) => (val === undefined ? undefined : val === "true")),
   sortBy: z
-    .enum([
-      'code',
-      'name',
-      'unit',
-      'currentStock',
-      'minStock',
-      'createdAt',
-    ])
-    .default('createdAt'),
-  sortOrder: z
-    .enum(['asc', 'desc'])
-    .default('desc'),
-})
+    .enum(["code", "name", "unit", "currentStock", "minStock", "createdAt"])
+    .default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+});
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
 
     if (!user) {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(request.url);
 
-    const query = exportQuerySchema.parse(
-      Object.fromEntries(searchParams)
-    )
+    const query = exportQuerySchema.parse(Object.fromEntries(searchParams));
 
     // No mode: 'insensitive' — not supported by MySQL connector
     const where: {
       OR?: Array<{
-        code?: { contains: string }
-        name?: { contains: string }
-      }>
-      isActive?: boolean
-      id?: { in: string[] }
-    } = {}
+        code?: { contains: string };
+        name?: { contains: string };
+      }>;
+      isActive?: boolean;
+      id?: { in: string[] };
+    } = {};
 
     if (query.ids) {
-      where.id = { in: query.ids.split(',') }
+      where.id = { in: query.ids.split(",") };
     } else {
       if (query.search) {
         where.OR = [
           { code: { contains: query.search } },
           { name: { contains: query.search } },
-        ]
+        ];
       }
 
       if (query.isActive !== undefined) {
-        where.isActive = query.isActive
+        where.isActive = query.isActive;
       }
     }
 
@@ -88,20 +74,20 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         updatedAt: true,
       },
-    })
+    });
 
     // Generate CSV
     const headers = [
-      'Kode',
-      'Nama',
-      'Satuan',
-      'Stok Saat Ini',
-      'Stok Minimum',
-      'Deskripsi',
-      'Status',
-      'Dibuat Pada',
-      'Diperbarui Pada',
-    ]
+      "Kode",
+      "Nama",
+      "Satuan",
+      "Stok Saat Ini",
+      "Stok Minimum",
+      "Deskripsi",
+      "Status",
+      "Dibuat Pada",
+      "Diperbarui Pada",
+    ];
 
     const rows = items.map((item) => [
       item.code,
@@ -109,24 +95,26 @@ export async function GET(request: NextRequest) {
       item.unit,
       item.currentStock.toString(),
       item.minStock.toString(),
-      item.description || '',
-      item.isActive ? 'Aktif' : 'Nonaktif',
-      new Date(item.createdAt).toLocaleString('id-ID'),
-      new Date(item.updatedAt).toLocaleString('id-ID'),
-    ])
+      item.description || "",
+      item.isActive ? "Aktif" : "Nonaktif",
+      new Date(item.createdAt).toLocaleString("id-ID"),
+      new Date(item.updatedAt).toLocaleString("id-ID"),
+    ]);
 
     const csvContent = [
-      headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')),
-    ].join('\n')
+      headers.join(","),
+      ...rows.map((row) =>
+        row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","),
+      ),
+    ].join("\n");
 
     return new NextResponse(csvContent, {
       headers: {
-        'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="items-export-${new Date().toISOString().split('T')[0]}.csv"`,
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="items-export-${new Date().toISOString().split("T")[0]}.csv"`,
       },
-    })
+    });
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }

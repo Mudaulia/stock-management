@@ -1,29 +1,37 @@
-'use client'
+"use client";
 
-import { StatCards } from './components/StatCards'
-import { RecentTransactionsTable } from './components/RecentTransactionsTable'
-import { LowStockAlert } from './components/LowStockAlert'
-import { Plus, ArrowUp, ArrowDown, ClipboardCheck } from 'lucide-react'
-import Link from 'next/link'
-import { useDashboardStats, useRecentTransactions, useLowStockItems } from '@/hooks/use-api'
-import { useAuth } from '@/hooks/use-auth'
-import { EmptyState } from '@/components/ui/empty-state'
+import { StatCards } from "./components/StatCards";
+import { RecentTransactionsTable } from "./components/RecentTransactionsTable";
+import { LowStockAlert } from "./components/LowStockAlert";
+import { Plus, ArrowUp, ArrowDown, ClipboardCheck } from "lucide-react";
+import Link from "next/link";
+import {
+  useDashboardStats,
+  useRecentTransactions,
+  useLowStockItems,
+} from "@/hooks/use-api";
+import { useAuth } from "@/hooks/use-auth";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function DashboardPage() {
-  const { user, isLoading: authLoading } = useAuth()
-  const { data: stats, isLoading: statsLoading, isError: statsError } = useDashboardStats()
+  const { user, isLoading: authLoading } = useAuth();
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+  } = useDashboardStats();
   const {
     data: recentTransactions,
     isLoading: transactionsLoading,
     isError: transactionsError,
     refetch: refetchTransactions,
-  } = useRecentTransactions()
+  } = useRecentTransactions();
   const {
     data: lowStockItems,
     isLoading: lowStockLoading,
     isError: lowStockError,
     refetch: refetchLowStock,
-  } = useLowStockItems()
+  } = useLowStockItems();
 
   if (authLoading) {
     return (
@@ -35,7 +43,7 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -45,7 +53,8 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Selamat datang, {user?.fullName || 'User'}! Berikut ringkasan stok Anda.
+            Selamat datang, {user?.fullName || "User"}! Berikut ringkasan stok
+            Anda.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -86,7 +95,10 @@ export default function DashboardPage() {
           ))}
         </div>
       ) : statsError ? (
-        <p className="text-sm text-destructive">Gagal memuat ringkasan statistik. Muat ulang halaman untuk mencoba lagi.</p>
+        <p className="text-sm text-destructive">
+          Gagal memuat ringkasan statistik. Muat ulang halaman untuk mencoba
+          lagi.
+        </p>
       ) : (
         <StatCards
           totalItems={stats?.totalItems ?? 0}
@@ -141,5 +153,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

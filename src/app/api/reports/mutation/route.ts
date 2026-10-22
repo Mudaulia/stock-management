@@ -1,30 +1,34 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { TransactionType, type Prisma } from '@prisma/client'
-import { handleApiError, paginatedResponse, successResponse } from '@/lib/api-response'
+import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { TransactionType, type Prisma } from "@prisma/client";
+import {
+  handleApiError,
+  paginatedResponse,
+  successResponse,
+} from "@/lib/api-response";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const search = searchParams.get('search') || ''
-    const type = searchParams.get('type') || ''
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
-    const itemId = searchParams.get('itemId')
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const search = searchParams.get("search") || "";
+    const type = searchParams.get("type") || "";
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const itemId = searchParams.get("itemId");
 
-    const skip = (page - 1) * limit
+    const skip = (page - 1) * limit;
 
-    const where: Prisma.StockTransactionWhereInput = {}
+    const where: Prisma.StockTransactionWhereInput = {};
 
     if (search) {
       where.OR = [
@@ -32,26 +36,26 @@ export async function GET(request: NextRequest) {
         { item: { name: { contains: search } } },
         { reference: { contains: search } },
         { notes: { contains: search } },
-      ]
+      ];
     }
 
-    if (type && ['STOCK_IN', 'STOCK_OUT', 'ADJUSTMENT'].includes(type)) {
-      where.type = type as TransactionType
+    if (type && ["STOCK_IN", "STOCK_OUT", "ADJUSTMENT"].includes(type)) {
+      where.type = type as TransactionType;
     }
 
     if (itemId) {
-      where.itemId = itemId
+      where.itemId = itemId;
     }
 
     if (startDate || endDate) {
-      where.transactionDate = {}
-      if (startDate) where.transactionDate.gte = new Date(startDate)
+      where.transactionDate = {};
+      if (startDate) where.transactionDate.gte = new Date(startDate);
       // Inclusive end date: YYYY-MM-DD parsed as UTC midnight would exclude
       // transactions later that day (WIB timezone) — extend to end of day.
       if (endDate) {
-        const end = new Date(endDate)
-        end.setUTCHours(23, 59, 59, 999)
-        where.transactionDate.lte = end
+        const end = new Date(endDate);
+        end.setUTCHours(23, 59, 59, 999);
+        where.transactionDate.lte = end;
       }
     }
 
@@ -60,7 +64,7 @@ export async function GET(request: NextRequest) {
         where,
         skip,
         take: limit,
-        orderBy: { transactionDate: 'desc' },
+        orderBy: { transactionDate: "desc" },
         include: {
           item: {
             select: { id: true, code: true, name: true, unit: true },
@@ -71,33 +75,40 @@ export async function GET(request: NextRequest) {
         },
       }),
       prisma.stockTransaction.count({ where }),
-    ])
+    ]);
 
     // Calculate summary by type (no pagination — where only)
     const summary = await prisma.stockTransaction.groupBy({
-      by: ['type'],
+      by: ["type"],
       where,
       _sum: { quantity: true },
       _count: { id: true },
-    })
+    });
 
-    const summaryByType = summary.reduce((acc, curr) => {
-      acc[curr.type] = {
-        totalQuantity: curr._sum.quantity ?? 0,
-        transactionCount: curr._count.id,
-      }
-      return acc
-    }, {} as Record<string, { totalQuantity: number; transactionCount: number }>)
+    const summaryByType = summary.reduce(
+      (acc, curr) => {
+        acc[curr.type] = {
+          totalQuantity: curr._sum.quantity ?? 0,
+          transactionCount: curr._count.id,
+        };
+        return acc;
+      },
+      {} as Record<string, { totalQuantity: number; transactionCount: number }>,
+    );
 
     return NextResponse.json(
-      paginatedResponse(transactions, {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      }, summaryByType)
-    )
+      paginatedResponse(
+        transactions,
+        {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+        summaryByType,
+      ),
+    );
   } catch (error) {
-    return handleApiError(error)
+    return handleApiError(error);
   }
 }

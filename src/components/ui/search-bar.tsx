@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { Input } from "@/components/ui/input"
-import { Search, X } from "lucide-react"
-import { useDebounce } from "@/hooks/use-debounce"
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Search, X } from "lucide-react";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export interface SearchBarProps {
-  placeholder?: string
-  value?: string
-  onChange?: (value: string) => void
-  onSearch?: (value: string) => void
-  debounceMs?: number
-  className?: string
-  showClearButton?: boolean
+  placeholder?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+  onSearch?: (value: string) => void;
+  debounceMs?: number;
+  className?: string;
+  showClearButton?: boolean;
 }
 
 export function SearchBar({
@@ -26,32 +26,32 @@ export function SearchBar({
   showClearButton = true,
 }: SearchBarProps) {
   const [internalValue, setInternalValue] = React.useState(
-    controlledValue ?? ""
-  )
-  const value = controlledValue ?? internalValue
-  const debouncedValue = useDebounce(value, debounceMs)
+    controlledValue ?? "",
+  );
+  const value = controlledValue ?? internalValue;
+  const debouncedValue = useDebounce(value, debounceMs);
 
   React.useEffect(() => {
     if (onSearch && debouncedValue !== "") {
-      onSearch(debouncedValue)
+      onSearch(debouncedValue);
     }
-  }, [debouncedValue, onSearch])
+  }, [debouncedValue, onSearch]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
+    const newValue = e.target.value;
     if (controlledValue === undefined) {
-      setInternalValue(newValue)
+      setInternalValue(newValue);
     }
-    onChange?.(newValue)
-  }
+    onChange?.(newValue);
+  };
 
   const handleClear = () => {
     if (controlledValue === undefined) {
-      setInternalValue("")
+      setInternalValue("");
     }
-    onChange?.("")
-    onSearch?.("")
-  }
+    onChange?.("");
+    onSearch?.("");
+  };
 
   return (
     <div className={cn("relative", className)}>
@@ -75,5 +75,5 @@ export function SearchBar({
         </button>
       )}
     </div>
-  )
+  );
 }

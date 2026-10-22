@@ -51,15 +51,18 @@ export function useKeyboardNavigation<T = unknown>({
     selectedIndexRef.current = selectedIndex;
   }, [selectedIndex]);
 
-  const setSelectedIndex = useCallback((index: number) => {
-    if (index >= -1 && index < rowCount) {
-      setSelectedIndexState(index);
-      // Focus the row element if it exists
-      if (index >= 0 && rowsRef.current[index]) {
-        rowsRef.current[index].focus();
+  const setSelectedIndex = useCallback(
+    (index: number) => {
+      if (index >= -1 && index < rowCount) {
+        setSelectedIndexState(index);
+        // Focus the row element if it exists
+        if (index >= 0 && rowsRef.current[index]) {
+          rowsRef.current[index].focus();
+        }
       }
-    }
-  }, [rowCount]);
+    },
+    [rowCount],
+  );
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -131,7 +134,7 @@ export function useKeyboardNavigation<T = unknown>({
         }
       }
     },
-    [enabled, rowCount, onRowSelect, onRowActivate, onEscape, setSelectedIndex]
+    [enabled, rowCount, onRowSelect, onRowActivate, onEscape, setSelectedIndex],
   );
 
   // Attach event listener to table container
@@ -210,7 +213,7 @@ export function useRowSelection<T extends { id: string }>() {
 
   const isSelected = useCallback(
     (id: string) => selectedIds.has(id),
-    [selectedIds]
+    [selectedIds],
   );
 
   const selectedCount = selectedIds.size;

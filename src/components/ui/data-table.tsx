@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 import {
   ColumnDef,
   flexRender,
@@ -11,7 +11,7 @@ import {
   SortingState,
   useReactTable,
   VisibilityState,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 import {
   Table,
   TableBody,
@@ -19,25 +19,25 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Pagination } from "@/components/ui/pagination"
-import { EmptyState } from "@/components/ui/empty-state"
+} from "@/components/ui/table";
+import { Pagination } from "@/components/ui/pagination";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-  pageSize?: number
-  pageSizeOptions?: number[]
-  showPagination?: boolean
-  showPageSizeSelector?: boolean
-  showPageInfo?: boolean
-  enableSorting?: boolean
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
+  pageSize?: number;
+  pageSizeOptions?: number[];
+  showPagination?: boolean;
+  showPageSizeSelector?: boolean;
+  showPageInfo?: boolean;
+  enableSorting?: boolean;
   emptyState?: {
-    title?: string
-    description?: string
-  }
-  className?: string
-  onRowClick?: (row: TData) => void
+    title?: string;
+    description?: string;
+  };
+  className?: string;
+  onRowClick?: (row: TData) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -53,10 +53,10 @@ export function DataTable<TData, TValue>({
   className,
   onRowClick,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
+    React.useState<VisibilityState>({});
 
   const table = useReactTable({
     data,
@@ -79,11 +79,11 @@ export function DataTable<TData, TValue>({
       rowSelection,
       columnVisibility,
     },
-  })
+  });
 
-  const totalItems = data.length
-  const currentPage = table.getState().pagination.pageIndex + 1
-  const totalPages = Math.ceil(totalItems / pageSize)
+  const totalItems = data.length;
+  const currentPage = table.getState().pagination.pageIndex + 1;
+  const totalPages = Math.ceil(totalItems / pageSize);
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -97,19 +97,17 @@ export function DataTable<TData, TValue>({
                     <TableHead key={header.id} />
                   ) : (
                     <TableHead key={header.id}>
-                      {header.column.getCanSort() ? (
-                        flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )
-                      ) : (
-                        flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )
-                      )}
+                      {header.column.getCanSort()
+                        ? flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                     </TableHead>
-                  )
+                  );
                 })}
               </TableRow>
             ))}
@@ -127,7 +125,7 @@ export function DataTable<TData, TValue>({
                     <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   ))}
@@ -142,8 +140,7 @@ export function DataTable<TData, TValue>({
                   <EmptyState
                     title={emptyState?.title || "Tidak ada data"}
                     description={
-                      emptyState?.description ||
-                      "Belum ada data yang tersedia."
+                      emptyState?.description || "Belum ada data yang tersedia."
                     }
                   />
                 </TableCell>
@@ -167,5 +164,5 @@ export function DataTable<TData, TValue>({
         />
       )}
     </div>
-  )
+  );
 }

@@ -1,45 +1,44 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 
 export interface FormFieldProps {
-  label: string
-  htmlFor: string
-  error?: string
-  required?: boolean
-  className?: string
-  children?: React.ReactNode
+  label: string;
+  htmlFor: string;
+  error?: string;
+  required?: boolean;
+  className?: string;
+  children?: React.ReactNode;
 }
 
-export interface FormFieldInputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string
-  htmlFor: string
-  error?: string
-  required?: boolean
-  icon?: React.ReactNode
+export interface FormFieldInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: string;
+  htmlFor: string;
+  error?: string;
+  required?: boolean;
+  icon?: React.ReactNode;
 }
 
 export interface FormFieldSelectProps {
-  label: string
-  htmlFor: string
-  error?: string
-  required?: boolean
-  placeholder?: string
-  items: { value: string; label: string }[]
-  value?: string
-  onValueChange?: (value: string) => void
-  disabled?: boolean
+  label: string;
+  htmlFor: string;
+  error?: string;
+  required?: boolean;
+  placeholder?: string;
+  items: { value: string; label: string }[];
+  value?: string;
+  onValueChange?: (value: string) => void;
+  disabled?: boolean;
 }
 
 /**
@@ -61,11 +60,9 @@ export function FormField({
         {required && <span className="text-destructive ml-1">*</span>}
       </Label>
       {children}
-      {error && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
-  )
+  );
 }
 
 /**
@@ -95,14 +92,10 @@ export function FormFieldInput({
             {icon}
           </span>
         )}
-        <Input
-          id={htmlFor}
-          className={cn(icon && "pl-10")}
-          {...props}
-        />
+        <Input id={htmlFor} className={cn(icon && "pl-10")} {...props} />
       </div>
     </FormField>
-  )
+  );
 }
 
 /**
@@ -127,11 +120,7 @@ export function FormFieldSelect({
       error={error}
       required={required}
     >
-      <Select
-        value={value}
-        onValueChange={onValueChange}
-        disabled={disabled}
-      >
+      <Select value={value} onValueChange={onValueChange} disabled={disabled}>
         <SelectTrigger id={htmlFor}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
@@ -144,5 +133,5 @@ export function FormFieldSelect({
         </SelectContent>
       </Select>
     </FormField>
-  )
+  );
 }

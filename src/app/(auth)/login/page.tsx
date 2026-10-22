@@ -1,30 +1,46 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Lock, Mail, User } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Lock, Mail, User } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
-  email: z.string().min(1, 'Email wajib diisi'),
-  password: z.string().min(1, 'Password wajib diisi'),
-})
+  email: z.string().min(1, "Email wajib diisi"),
+  password: z.string().min(1, "Password wajib diisi"),
+});
 
-type LoginForm = z.infer<typeof loginSchema>
+type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     register,
@@ -32,34 +48,42 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-  })
+  });
 
   const onSubmit = async (data: LoginForm) => {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || 'Login gagal')
+        throw new Error(result.message || "Login gagal");
       }
 
-      router.push('/dashboard')
-      router.refresh()
+      // Hormati ?redirect= hanya untuk path internal (cegah open redirect).
+      const rawRedirect = searchParams.get("redirect");
+      const redirect =
+        rawRedirect &&
+        rawRedirect.startsWith("/") &&
+        !rawRedirect.startsWith("//")
+          ? rawRedirect
+          : "/dashboard";
+      router.push(redirect);
+      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Terjadi kesalahan')
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
@@ -84,12 +108,14 @@ export default function LoginPage() {
                   type="email"
                   placeholder="admin@company.com"
                   className="pl-10"
-                  {...register('email')}
+                  {...register("email")}
                   disabled={isLoading}
                 />
               </div>
               {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.email.message}
+                </p>
               )}
             </div>
             <div className="space-y-2">
@@ -101,12 +127,14 @@ export default function LoginPage() {
                   type="password"
                   placeholder="••••••••"
                   className="pl-10"
-                  {...register('password')}
+                  {...register("password")}
                   disabled={isLoading}
                 />
               </div>
               {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.password.message}
+                </p>
               )}
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
@@ -116,7 +144,7 @@ export default function LoginPage() {
                   Masuk...
                 </>
               ) : (
-                'Masuk'
+                "Masuk"
               )}
             </Button>
           </form>
@@ -128,5 +156,5 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }

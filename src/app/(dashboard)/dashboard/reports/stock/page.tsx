@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { Suspense, useCallback } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,88 +22,146 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Loader2, Package, Filter, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import {
+  Search,
+  Loader2,
+  Package,
+  Filter,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast, Toaster } from "@/components/ui/toaster";
 import { bem, bemVariant } from "@/lib/bem";
 import { useStockReport, useExportStockReport } from "@/hooks/use-api";
 import { stockReportItemSchema, stockReportSummarySchema } from "@/lib/schemas";
 import { SkeletonTable } from "@/components/ui/skeleton";
-import { useKeyboardNavigation, useRowSelection } from "@/hooks/use-keyboard-navigation";
+import {
+  useKeyboardNavigation,
+  useRowSelection,
+} from "@/hooks/use-keyboard-navigation";
 import { Download } from "lucide-react";
 import { EmptyState, NoData } from "@/components/ui/empty-state";
 import { useDebounce } from "@/hooks";
+import { useUrlState } from "@/hooks/use-url-state";
 
 type StockItem = z.infer<typeof stockReportItemSchema>;
 type StockReportSummary = z.infer<typeof stockReportSummarySchema>;
 
 export default function StockReportPage() {
-  const { showSuccess, showError } = useToast();
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 300);
-  const [lowStockOnly, setLowStockOnly] = useState(false);
-  const [isActiveFilter, setIsActiveFilter] = useState<"all" | "true" | "false">("all");
+  return (
+    <Suspense fallback={null}>
+      <StockReportContent />
+    </Suspense>
+  );
+}
 
-  // Reset ke halaman 1 saat filter berubah (hindari hasil kosong karena masih di halaman akhir)
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [debouncedSearch, lowStockOnly, isActiveFilter]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 50,
-    total: 0,
-    totalPages: 0,
-  });
+function StockReportContent() {
+  const { showSuccess, showError } = useToast();
+
+  // URL-backed filter/pagination state (shareable links)
+  const [searchParam, setSearchParam] = useUrlState("q");
+  const [lowStockOnlyParam, setLowStockOnlyParam] = useUrlState("lowStockOnly");
+  const [isActiveFilter, setIsActiveFilter] = useUrlState("isActive", "all");
+  const [pageParam, setPageParam] = useUrlState("page");
+  const [limitParam, setLimitParam] = useUrlState("limit");
+
+  const search = searchParam;
+  const setSearch = (value: string) => {
+    setSearchParam(value);
+    setPageParam("");
+  };
+  const lowStockOnly = lowStockOnlyParam === "true";
+  const setLowStockOnly = (checked: boolean) => {
+    setLowStockOnlyParam(checked ? "true" : "false");
+    setPageParam("");
+  };
+  const handleIsActiveFilterChange = (value: string) => {
+    setIsActiveFilter(value as "all" | "true" | "false");
+    setPageParam("");
+  };
+
+  const page = Math.max(1, parseInt(pageParam, 10) || 1);
+  const limit = Math.max(1, parseInt(limitParam, 10) || 50);
+  const debouncedSearch = useDebounce(search, 300);
 
   // React Query hooks
-  const { data: reportData, isLoading, isError, error, refetch } = useStockReport({
-    page: pagination.page,
-    limit: pagination.limit,
+  const {
+    data: reportData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useStockReport({
+    page,
+    limit,
     search: debouncedSearch,
     lowStockOnly,
-    isActive: isActiveFilter === "all" ? "all" : isActiveFilter,
+    isActive:
+      isActiveFilter === "all" ? "all" : (isActiveFilter as "true" | "false"),
   });
 
   const items = reportData?.data ?? [];
-  const summary = reportData?.summary ?? { totalItems: 0, lowStockCount: 0, outOfStockCount: 0, normalCount: 0 };
+  const summary = reportData?.summary ?? {
+    totalItems: 0,
+    lowStockCount: 0,
+    outOfStockCount: 0,
+    normalCount: 0,
+  };
   const paginationData = reportData?.pagination;
+  const pagination = {
+    page,
+    limit,
+    total: paginationData?.total ?? 0,
+    totalPages: paginationData?.totalPages ?? 1,
+  };
 
   // Keyboard navigation
-  const { tableRef, selectedIndex, setSelectedIndex } = useKeyboardNavigation<StockItem>({
-    rowCount: items.length,
-    enabled: !isLoading && items.length > 0,
-  });
+  const { tableRef, selectedIndex, setSelectedIndex } =
+    useKeyboardNavigation<StockItem>({
+      rowCount: items.length,
+      enabled: !isLoading && items.length > 0,
+    });
 
   // Row selection for bulk actions
-  const { selectedIds, selectedCount, toggleRow, toggleAll, clearSelection, isSelected } = useRowSelection<StockItem>()
+  const {
+    selectedIds,
+    selectedCount,
+    toggleRow,
+    toggleAll,
+    clearSelection,
+    isSelected,
+  } = useRowSelection<StockItem>();
 
   // Export mutation
   const exportMutation = useExportStockReport({
     onSuccess: (blob) => {
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `stock-report-export-${new Date().toISOString().split('T')[0]}.csv`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-      showSuccess('Berhasil', 'Laporan stok berhasil diekspor')
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `stock-report-export-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showSuccess("Berhasil", "Laporan stok berhasil diekspor");
     },
-    onError: (err) => showError('Error', err.message),
-  })
+    onError: (err) => showError("Error", err.message),
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPagination({ ...pagination, page: 1 });
+    setPageParam("");
   };
 
-  const handlePageChange = (page: number) => {
-    setPagination({ ...pagination, page });
+  const handlePageChange = (newPage: number) => {
+    setPageParam(String(newPage));
   };
 
-  const handleLimitChange = (limit: number) => {
-    setPagination({ ...pagination, limit, page: 1 });
+  const handleLimitChange = (newLimit: number) => {
+    setLimitParam(String(newLimit));
+    setPageParam("");
   };
 
   const getStatusBadge = (status: string) => {
@@ -123,7 +181,12 @@ export default function StockReportPage() {
       OUT_OF_STOCK: <Minus className="h-3 w-3" />,
     };
     return (
-      <span className={cn("inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium", variants[status as keyof typeof variants])}>
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium",
+          variants[status as keyof typeof variants],
+        )}
+      >
         {icons[status as keyof typeof icons]}
         {labels[status as keyof typeof labels]}
       </span>
@@ -144,8 +207,12 @@ export default function StockReportPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Laporan Persediaan Stok</h1>
-          <p className="text-gray-500 mt-1">Kondisi stok seluruh barang</p>
+          <h1 className="text-3xl font-bold text-foreground">
+            Laporan Persediaan Stok
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Kondisi stok seluruh barang
+          </p>
         </div>
       </div>
 
@@ -154,10 +221,14 @@ export default function StockReportPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 rounded-lg"><Package className="h-5 w-5 text-blue-600" /></div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Package className="h-5 w-5 text-blue-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500">Total Item</p>
-                <p className="text-2xl font-bold text-gray-900">{summary.totalItems}</p>
+                <p className="text-sm text-muted-foreground">Total Item</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {summary.totalItems}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -165,10 +236,14 @@ export default function StockReportPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-100 rounded-lg"><TrendingUp className="h-5 w-5 text-green-600" /></div>
+              <div className="p-3 bg-green-100 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-green-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500">Normal</p>
-                <p className="text-2xl font-bold text-gray-900">{summary.normalCount}</p>
+                <p className="text-sm text-muted-foreground">Normal</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {summary.normalCount}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -176,10 +251,14 @@ export default function StockReportPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-100 rounded-lg"><TrendingDown className="h-5 w-5 text-yellow-600" /></div>
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <TrendingDown className="h-5 w-5 text-yellow-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500">Stok Rendah</p>
-                <p className="text-2xl font-bold text-gray-900">{summary.lowStockCount}</p>
+                <p className="text-sm text-muted-foreground">Stok Rendah</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {summary.lowStockCount}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -187,10 +266,14 @@ export default function StockReportPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-red-100 rounded-lg"><Minus className="h-5 w-5 text-red-600" /></div>
+              <div className="p-3 bg-red-100 rounded-lg">
+                <Minus className="h-5 w-5 text-red-600" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500">Stok Habis</p>
-                <p className="text-2xl font-bold text-gray-900">{summary.outOfStockCount}</p>
+                <p className="text-sm text-muted-foreground">Stok Habis</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {summary.outOfStockCount}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -200,7 +283,10 @@ export default function StockReportPage() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-col sm:flex-row gap-4"
+          >
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -216,15 +302,13 @@ export default function StockReportPage() {
                   type="checkbox"
                   checked={lowStockOnly}
                   onChange={(e) => setLowStockOnly(e.target.checked)}
-                  className="rounded border-gray-300 text-primary focus:ring-primary"
+                  className="rounded border text-primary focus:ring-primary"
                 />
                 <span className="text-sm">Hanya stok rendah</span>
               </label>
               <Select
                 value={isActiveFilter}
-                onValueChange={(value: string) =>
-                  setIsActiveFilter(value as "all" | "true" | "false")
-                }
+                onValueChange={handleIsActiveFilterChange}
               >
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Semua Status" />
@@ -248,7 +332,10 @@ export default function StockReportPage() {
           ) : isError ? (
             <EmptyState
               title="Gagal memuat data"
-              description={error?.message ?? "Terjadi kesalahan saat memuat laporan stok. Silakan coba lagi."}
+              description={
+                error?.message ??
+                "Terjadi kesalahan saat memuat laporan stok. Silakan coba lagi."
+              }
               actionLabel="Coba Lagi"
               onAction={() => refetch()}
             />
@@ -257,7 +344,7 @@ export default function StockReportPage() {
               title="Tidak ada data stok"
               description="Belum ada barang yang terdaftar dalam sistem."
               actionLabel="Tambah Barang"
-              onAction={() => window.location.href = '/dashboard/items'}
+              onAction={() => (window.location.href = "/dashboard/items")}
             />
           ) : (
             <>
@@ -271,7 +358,9 @@ export default function StockReportPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => exportMutation.mutate({ ids: Array.from(selectedIds) })}
+                      onClick={() =>
+                        exportMutation.mutate({ ids: Array.from(selectedIds) })
+                      }
                       disabled={exportMutation.isPending}
                     >
                       <Download className="mr-2 h-4 w-4" />
@@ -290,37 +379,55 @@ export default function StockReportPage() {
                       <TableHead className="w-12">
                         <input
                           type="checkbox"
-                          checked={selectedCount === items.length && items.length > 0}
-                          onChange={() => toggleAll(items.map(i => i.id))}
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          checked={
+                            selectedCount === items.length && items.length > 0
+                          }
+                          onChange={() => toggleAll(items.map((i) => i.id))}
+                          className="h-4 w-4 rounded border text-primary focus:ring-primary"
                           aria-label="Pilih semua"
                         />
                       </TableHead>
                       <TableHead className="w-24">Kode</TableHead>
                       <TableHead>Nama Barang</TableHead>
                       <TableHead className="w-24">Satuan</TableHead>
-                      <TableHead className="text-right w-32">Stok Saat Ini</TableHead>
-                      <TableHead className="text-right w-32">Stok Minimum</TableHead>
-                      <TableHead className="text-right w-32">% dari Min</TableHead>
+                      <TableHead className="text-right w-32">
+                        Stok Saat Ini
+                      </TableHead>
+                      <TableHead className="text-right w-32">
+                        Stok Minimum
+                      </TableHead>
+                      <TableHead className="text-right w-32">
+                        % dari Min
+                      </TableHead>
                       <TableHead className="w-32">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {items.map((item, index) => {
-                      const globalIndex = (pagination.page - 1) * pagination.limit + index + 1;
-                      const rowSelected = isSelected(item.id)
+                      const globalIndex =
+                        (pagination.page - 1) * pagination.limit + index + 1;
+                      const rowSelected = isSelected(item.id);
                       return (
-                        <TableRow key={item.id} className={cn(rowSelected && "bg-primary/5")} onClick={() => toggleRow(item.id)}>
+                        <TableRow
+                          key={item.id}
+                          className={cn(rowSelected && "bg-primary/5")}
+                          onClick={() => toggleRow(item.id)}
+                        >
                           <TableCell className="w-12">
                             <input
                               type="checkbox"
                               checked={rowSelected}
-                              onChange={(e) => { e.stopPropagation(); toggleRow(item.id); }}
-                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                toggleRow(item.id);
+                              }}
+                              className="h-4 w-4 rounded border text-primary focus:ring-primary"
                               aria-label={`Pilih item ${item.id}`}
                             />
                           </TableCell>
-                          <TableCell className="font-mono text-sm">{item.code}</TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {item.code}
+                          </TableCell>
                           <TableCell>
                             <div className="font-medium">{item.name}</div>
                           </TableCell>
@@ -332,11 +439,17 @@ export default function StockReportPage() {
                             {item.minStock.toLocaleString("id-ID")}
                           </TableCell>
                           <TableCell className="text-right font-mono font-medium">
-                            <span className={getStockPercentageColor(item.stockPercentage)}>
+                            <span
+                              className={getStockPercentageColor(
+                                item.stockPercentage,
+                              )}
+                            >
                               {item.stockPercentage}%
                             </span>
                           </TableCell>
-                          <TableCell>{getStatusBadge(item.stockStatus)}</TableCell>
+                          <TableCell>
+                            {getStatusBadge(item.stockStatus)}
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -347,32 +460,44 @@ export default function StockReportPage() {
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                           <div className="text-sm text-muted-foreground">
                             Menampilkan{" "}
-                            {((pagination.page - 1) * pagination.limit) + 1}{" "}
-                            -{" "}
-                            {Math.min(pagination.page * pagination.limit, paginationData?.total ?? 0)}{" "}
-                            dari{" "}
-                            {paginationData?.total ?? 0}{" "}
-                            data
+                            {(pagination.page - 1) * pagination.limit + 1} -{" "}
+                            {Math.min(
+                              pagination.page * pagination.limit,
+                              paginationData?.total ?? 0,
+                            )}{" "}
+                            dari {paginationData?.total ?? 0} data
                           </div>
                           <div className="flex items-center gap-2">
                             <Select
                               value={pagination.limit.toString()}
-                              onValueChange={(v) => handleLimitChange(parseInt(v))}
+                              onValueChange={(v) =>
+                                handleLimitChange(parseInt(v))
+                              }
                             >
                               <SelectTrigger className="w-[100px]">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="10">10 per halaman</SelectItem>
-                                <SelectItem value="25">25 per halaman</SelectItem>
-                                <SelectItem value="50">50 per halaman</SelectItem>
-                                <SelectItem value="100">100 per halaman</SelectItem>
+                                <SelectItem value="10">
+                                  10 per halaman
+                                </SelectItem>
+                                <SelectItem value="25">
+                                  25 per halaman
+                                </SelectItem>
+                                <SelectItem value="50">
+                                  50 per halaman
+                                </SelectItem>
+                                <SelectItem value="100">
+                                  100 per halaman
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handlePageChange(pagination.page - 1)}
+                              onClick={() =>
+                                handlePageChange(pagination.page - 1)
+                              }
                               disabled={pagination.page <= 1}
                             >
                               Sebelumnya
@@ -380,13 +505,19 @@ export default function StockReportPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handlePageChange(pagination.page + 1)}
-                              disabled={pagination.page >= (paginationData?.totalPages ?? 1)}
+                              onClick={() =>
+                                handlePageChange(pagination.page + 1)
+                              }
+                              disabled={
+                                pagination.page >=
+                                (paginationData?.totalPages ?? 1)
+                              }
                             >
                               Selanjutnya
                             </Button>
                             <span className="flex items-center px-2 text-sm text-muted-foreground">
-                              Halaman {pagination.page} dari {paginationData?.totalPages ?? 1}
+                              Halaman {pagination.page} dari{" "}
+                              {paginationData?.totalPages ?? 1}
                             </span>
                           </div>
                         </div>

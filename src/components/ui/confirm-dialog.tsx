@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,30 +12,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import { AlertTriangle, Trash2, LogOut } from "lucide-react"
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Trash2, LogOut } from "lucide-react";
 
 export interface ConfirmDialogProps {
-  trigger?: React.ReactNode
-  triggerLabel?: string
+  trigger?: React.ReactNode;
+  triggerLabel?: string;
   triggerVariant?:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link"
-  title: string
-  description?: string
-  actionLabel?: string
-  cancelLabel?: string
-  actionVariant?: "default" | "destructive"
-  onConfirm?: () => void | Promise<void>
-  destructive?: boolean
-  icon?: React.ReactNode
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
+    "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  title: string;
+  description?: string;
+  actionLabel?: string;
+  cancelLabel?: string;
+  actionVariant?: "default" | "destructive";
+  onConfirm?: () => void | Promise<void>;
+  destructive?: boolean;
+  icon?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function ConfirmDialog({
@@ -53,31 +48,30 @@ export function ConfirmDialog({
   open,
   onOpenChange,
 }: ConfirmDialogProps) {
-  const [isProcessing, setIsProcessing] = React.useState(false)
+  const [isProcessing, setIsProcessing] = React.useState(false);
 
   const handleConfirm = async () => {
-    if (!onConfirm) return
-    setIsProcessing(true)
+    if (!onConfirm) return;
+    setIsProcessing(true);
     try {
-      await onConfirm()
+      await onConfirm();
     } finally {
-      setIsProcessing(false)
+      setIsProcessing(false);
     }
-  }
+  };
 
   const dialogContent = (
     <AlertDialogContent>
       <AlertDialogHeader>
         <AlertDialogTitle className="flex items-center gap-2">
-          {icon || (destructive ? (
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-          ) : null)}
+          {icon ||
+            (destructive ? (
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+            ) : null)}
           {title}
         </AlertDialogTitle>
         {description && (
-          <AlertDialogDescription>
-            {description}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         )}
       </AlertDialogHeader>
       <AlertDialogFooter>
@@ -95,14 +89,14 @@ export function ConfirmDialog({
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
-  )
+  );
 
   if (open !== undefined && onOpenChange) {
     return (
       <AlertDialog open={open} onOpenChange={onOpenChange}>
         {dialogContent}
       </AlertDialog>
-    )
+    );
   }
 
   return (
@@ -111,14 +105,12 @@ export function ConfirmDialog({
         {trigger !== undefined ? (
           trigger
         ) : (
-          <Button variant={triggerVariant}>
-            {triggerLabel}
-          </Button>
+          <Button variant={triggerVariant}>{triggerLabel}</Button>
         )}
       </AlertDialogTrigger>
       {dialogContent}
     </AlertDialog>
-  )
+  );
 }
 
 // Predefined confirm dialogs for common use cases
@@ -126,9 +118,12 @@ export function DeleteConfirmDialog({
   onConfirm,
   itemName,
   ...props
-}: Omit<ConfirmDialogProps, "onConfirm" | "title" | "description" | "destructive" | "icon"> & {
-  onConfirm: () => void | Promise<void>
-  itemName?: string
+}: Omit<
+  ConfirmDialogProps,
+  "onConfirm" | "title" | "description" | "destructive" | "icon"
+> & {
+  onConfirm: () => void | Promise<void>;
+  itemName?: string;
 }) {
   return (
     <ConfirmDialog
@@ -144,14 +139,17 @@ export function DeleteConfirmDialog({
       actionLabel="Ya, Hapus"
       onConfirm={onConfirm}
     />
-  )
+  );
 }
 
 export function LogoutConfirmDialog({
   onConfirm,
   ...props
-}: Omit<ConfirmDialogProps, "onConfirm" | "title" | "description" | "destructive" | "icon"> & {
-  onConfirm: () => void | Promise<void>
+}: Omit<
+  ConfirmDialogProps,
+  "onConfirm" | "title" | "description" | "destructive" | "icon"
+> & {
+  onConfirm: () => void | Promise<void>;
 }) {
   return (
     <ConfirmDialog
@@ -163,5 +161,5 @@ export function LogoutConfirmDialog({
       actionLabel="Ya, Keluar"
       onConfirm={onConfirm}
     />
-  )
+  );
 }

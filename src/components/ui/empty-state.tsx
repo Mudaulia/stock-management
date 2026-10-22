@@ -1,22 +1,17 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import {
-  Package,
-  Search,
-  FileText,
-  AlertCircle,
-} from "lucide-react"
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Package, Search, FileText, AlertCircle } from "lucide-react";
 
 export interface EmptyStateProps {
-  title?: string
-  description?: string
-  icon?: React.ReactNode
-  actionLabel?: string
-  onAction?: () => void
-  className?: string
+  title?: string;
+  description?: string;
+  icon?: React.ReactNode;
+  actionLabel?: string;
+  onAction?: () => void;
+  className?: string;
 }
 
 const iconMap = {
@@ -24,7 +19,7 @@ const iconMap = {
   search: Search,
   file: FileText,
   alert: AlertCircle,
-}
+};
 
 export function EmptyState({
   title = "Tidak ada data",
@@ -34,13 +29,15 @@ export function EmptyState({
   onAction,
   className,
 }: EmptyStateProps) {
-  const Icon = icon || <Package className="h-12 w-12 text-muted-foreground/50" />
+  const Icon = icon || (
+    <Package className="h-12 w-12 text-muted-foreground/50" />
+  );
 
   return (
     <div
       className={cn(
         "flex flex-col items-center justify-center text-center py-12 px-4",
-        className
+        className,
       )}
     >
       <div className="mb-4">{Icon}</div>
@@ -49,12 +46,10 @@ export function EmptyState({
         {description}
       </p>
       {actionLabel && onAction && (
-        <Button onClick={onAction}>
-          {actionLabel}
-        </Button>
+        <Button onClick={onAction}>{actionLabel}</Button>
       )}
     </div>
-  )
+  );
 }
 
 // Predefined empty states for common use cases
@@ -62,8 +57,8 @@ export function NoSearchResults({
   onReset,
   className,
 }: {
-  onReset?: () => void
-  className?: string
+  onReset?: () => void;
+  className?: string;
 }) {
   return (
     <EmptyState
@@ -74,7 +69,7 @@ export function NoSearchResults({
       onAction={onReset}
       className={className}
     />
-  )
+  );
 }
 
 export function NoData({
@@ -93,5 +88,5 @@ export function NoData({
       onAction={onAction}
       className={className}
     />
-  )
+  );
 }
